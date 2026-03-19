@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Run3D Path - Strava Cinematic V8.2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Run3D Path - Strava Cinematic V8.3</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,7 +19,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #020617; font-family: 'Inter', sans-serif; }
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #020617; font-family: 'Inter', sans-serif; touch-action: manipulation; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; background-color: #0f172a; }
         
         #main-sidebar {
@@ -32,10 +32,11 @@
             position: absolute; left: 100%; top: 24px;
             background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1); border-left: none;
-            border-radius: 0 12px 12px 0; padding: 16px 10px; cursor: pointer;
+            border-radius: 0 12px 12px 0; padding: 16px 12px; cursor: pointer;
             box-shadow: 10px 0 30px rgba(0,0,0,0.5);
             display: flex; align-items: center; justify-content: center;
             transition: background 0.2s ease;
+            min-width: 44px; min-height: 44px; /* Better touch target */
         }
         #sidebar-tab:hover { background: #6366f1; }
 
@@ -57,9 +58,11 @@
 
         .btn-control {
             display: flex; align-items: center; justify-content: center; gap: 8px;
-            width: 100%; padding: 12px; border-radius: 14px; font-size: 13px; font-weight: 600;
+            width: 100%; padding: 14px; border-radius: 16px; font-size: 13px; font-weight: 700;
             transition: all 0.2s ease; border: 1px solid transparent;
+            cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
         }
+        .btn-control:active { transform: scale(0.97); opacity: 0.8; }
 
         .sign-marker {
             display: flex; align-items: center; justify-content: center;
@@ -90,24 +93,21 @@
         #settings-modal {
             position: fixed; inset: 0; background: rgba(2, 6, 23, 0.85);
             backdrop-filter: blur(12px); z-index: 3000; display: none;
-            align-items: center; justify-content: center;
+            align-items: center; justify-content: center; padding: 20px;
         }
         #settings-modal.active { display: flex; }
 
-        .photo-card {
-            position: relative; overflow: hidden; border-radius: 12px; aspect-ratio: 1;
-            background-color: #0f172a; border: 2px solid #1e293b; transition: all 0.2s;
-            cursor: pointer;
-        }
-        .photo-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; transition: opacity 0.2s; }
-        .photo-card.enabled img { opacity: 1; }
-        
         .pulse-border { animation: pulse-border-anim 2s infinite; }
         @keyframes pulse-border-anim { 
             0% { border-color: rgba(99, 102, 241, 0.2); }
             50% { border-color: rgba(99, 102, 241, 0.6); box-shadow: 0 0 15px rgba(99, 102, 241, 0.1); }
             100% { border-color: rgba(99, 102, 241, 0.2); }
         }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     </style>
 </head>
 <body class="text-slate-200 antialiased text-sm">
@@ -121,7 +121,7 @@
     </script>
 
     <!-- Overlay UI -->
-    <div id="photo-overlay">
+    <div id="photo-overlay" onclick="this.classList.remove('active')">
         <div class="relative flex flex-col items-center gap-6">
             <img id="overlay-img" src="" alt="View">
             <div class="px-8 py-3 bg-indigo-600/90 backdrop-blur-md rounded-2xl font-bold text-sm uppercase tracking-[0.2em] shadow-2xl border border-white/10">
@@ -132,7 +132,7 @@
 
     <!-- API Configuration Modal -->
     <div id="settings-modal">
-        <div class="bg-slate-900 border border-indigo-500/20 p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl space-y-8">
+        <div class="bg-slate-900 border border-indigo-500/20 p-8 md:p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl space-y-8">
             <div class="text-center">
                 <div class="inline-flex p-4 bg-indigo-600/10 rounded-2xl mb-4">
                     <i data-lucide="key" class="text-indigo-400 w-8 h-8"></i>
@@ -147,8 +147,8 @@
                     <input type="text" id="input-client-id" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-700" placeholder="e.g. 123456">
                 </div>
                 <div class="space-y-2">
-                    <label class="text-[10px] uppercase font-black text-slate-500 tracking-[0.15em] ml-1">Client Secret (40 chars)</label>
-                    <input type="password" id="input-client-secret" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-700" placeholder="Your API secret code">
+                    <label class="text-[10px] uppercase font-black text-slate-500 tracking-[0.15em] ml-1">Client Secret</label>
+                    <input type="password" id="input-client-secret" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-5 py-4 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-700" placeholder="Your 40-char secret">
                 </div>
             </div>
 
@@ -176,7 +176,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-black text-white tracking-tighter">Run3D</h1>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">V8.2 Turbo</p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">V8.3 Mobile Ready</p>
                 </div>
             </div>
             <button onclick="toggleSettings()" class="p-2.5 bg-slate-900 rounded-xl text-slate-600 hover:text-indigo-400 border border-slate-800 transition-colors">
@@ -189,11 +189,10 @@
             <section id="strava-section">
                 <div class="flex items-center justify-between px-2 mb-4">
                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Strava Sync</p>
-                    <i data-lucide="info" class="w-3 h-3 text-slate-600 cursor-help" title="OAuth requires hosting on your callback domain"></i>
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500 opacity-50"></i>
                 </div>
                 <div class="space-y-4 px-2">
                     <div id="strava-unconnected" class="space-y-4">
-                        <!-- Step 1 Card -->
                         <div id="api-status-card" onclick="toggleSettings()" class="p-4 rounded-2xl border bg-slate-900/50 border-slate-800 cursor-pointer transition-all hover:bg-slate-800/50">
                             <div class="flex items-center gap-3">
                                 <div id="api-status-icon" class="w-8 h-8 rounded-full flex items-center justify-center bg-slate-950">
@@ -206,7 +205,6 @@
                             </div>
                         </div>
 
-                        <!-- Step 2 Button -->
                         <button onclick="connectStrava()" id="btn-actual-connect" class="btn-control btn-strava shadow-xl disabled:opacity-20 group transition-all" disabled>
                             <i data-lucide="log-in" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
                             <span id="btn-connect-text">STEP 2: LOGIN TO STRAVA</span>
@@ -226,14 +224,14 @@
             </section>
 
             <section>
-                <p class="px-2 mb-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-nowrap">Local Files</p>
+                <p class="px-2 mb-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-nowrap text-[10px]">Local Data</p>
                 <div class="space-y-3">
                     <button id="gpx-btn" onclick="document.getElementById('gpx-input').click()" class="btn-control bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800 disabled:opacity-30" disabled>
-                        <i data-lucide="file-up" class="w-4 h-4"></i>
+                        <i data-lucide="file-up" class="w-4 h-4 text-indigo-400"></i>
                         <span>Upload .GPX</span>
                     </button>
                     <button onclick="document.getElementById('photo-input').click()" class="btn-control bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800">
-                        <i data-lucide="camera" class="w-4 h-4"></i>
+                        <i data-lucide="camera" class="w-4 h-4 text-purple-400"></i>
                         <span>Add Photos</span>
                     </button>
                     <input type="file" id="gpx-input" class="hidden" accept=".gpx">
@@ -242,15 +240,15 @@
             </section>
 
             <section id="camera-controls" class="hidden animate-in fade-in">
-                <p class="px-2 mb-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Rendering</p>
+                <p class="px-2 mb-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Controls</p>
                 <div class="space-y-3">
                     <button id="flyover-btn" onclick="toggleFlyover()" class="btn-control bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white border border-indigo-500/30">
                         <i data-lucide="clapperboard" class="w-4 h-4"></i>
                         <span id="flyover-btn-text">Cinematic Mode</span>
                     </button>
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="zoomToTrack()" class="btn-control bg-slate-900 hover:bg-slate-800 text-[10px] uppercase font-bold">Fit View</button>
-                        <button onclick="resetCamera()" class="btn-control bg-slate-900 hover:bg-slate-800 text-[10px] uppercase font-bold">Reset</button>
+                        <button onclick="zoomToTrack()" class="btn-control bg-slate-900 hover:bg-slate-800 text-[10px] uppercase font-bold text-nowrap">Fit View</button>
+                        <button onclick="resetCamera()" class="btn-control bg-slate-900 hover:bg-slate-800 text-[10px] uppercase font-bold text-nowrap">Reset</button>
                     </div>
                 </div>
             </section>
@@ -261,7 +259,7 @@
         <div id="map">
             <div id="map-loader" class="flex flex-col items-center justify-center h-full gap-5 bg-slate-950">
                 <div class="w-20 h-20 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                <p class="text-indigo-400 text-[11px] font-black uppercase tracking-[0.3em]">CONNECTING GRID...</p>
+                <p class="text-indigo-400 text-[11px] font-black uppercase tracking-[0.3em]">RECALIBRATING ENGINE...</p>
             </div>
         </div>
         
@@ -316,7 +314,7 @@
             } else {
                 card.className = 'p-4 rounded-2xl border border-slate-800 bg-slate-900/50 transition-all cursor-pointer hover:bg-slate-800 pulse-border';
                 icon.innerHTML = '<i data-lucide="alert-circle" class="text-indigo-400 w-5 h-5"></i>';
-                text.innerHTML = 'Step 1: <span class="text-white font-bold">ENTER API KEYS</span>';
+                text.innerHTML = 'Step 1: <span class="text-white font-bold text-[10px] uppercase">Setup Keys</span>';
                 connectBtn.disabled = true;
                 connectBtn.classList.add('opacity-20');
             }
@@ -346,7 +344,6 @@
             } catch(e) { showAlert("STORAGE ERROR"); }
         }
 
-        // --- UI RESET UTILITY ---
         function resetSyncUI() {
             const syncIcon = document.getElementById('sync-icon');
             const syncBtnText = document.getElementById('sync-btn-text');
@@ -362,6 +359,7 @@
             const scope = 'activity:read_all';
             const authUrl = `https://www.strava.com/oauth/authorize?client_id=${keys.id}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`;
             showAlert("OPENING STRAVA...");
+            
             try {
                 window.open(authUrl, '_top');
             } catch (e) {
@@ -379,7 +377,7 @@
             showAlert("AUTHENTICATING...");
             
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
 
             try {
                 const keys = getKeys();
@@ -394,8 +392,8 @@
                 if (data.access_token) {
                     localStorage.setItem('strava_access_token', data.access_token);
                     updateStravaUI(true);
-                    showAlert("LOGGED IN! SYNCING NOW...");
-                    fetchLatestStravaActivity();
+                    showAlert("LOGGED IN! FETCHING RUN...");
+                    setTimeout(() => fetchLatestStravaActivity(), 500);
                 } else {
                     showAlert("AUTH FAILED: " + (data.message || "CHECK KEYS"));
                 }
@@ -415,7 +413,6 @@
             document.getElementById('strava-connected').classList.toggle('hidden', !isConnected);
         }
 
-        // --- ENHANCED SYNC LOGIC ---
         async function fetchLatestStravaActivity() {
             const token = localStorage.getItem('strava_access_token');
             if (!token) return showAlert("NOT LOGGED IN");
@@ -426,9 +423,8 @@
             if(syncBtnText) syncBtnText.innerText = "SYNCING...";
             
             showAlert("FETCHING FROM STRAVA...");
-            
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20s
+            const timeoutId = setTimeout(() => controller.abort(), 20000);
 
             try {
                 const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { 
@@ -442,8 +438,6 @@
                     throw new Error("Expired session");
                 }
 
-                if (!actsRes.ok) throw new Error("API Error: " + actsRes.status);
-
                 const activities = await actsRes.json();
                 if (!Array.isArray(activities) || activities.length === 0) {
                     showAlert("NO RUNS FOUND");
@@ -456,24 +450,20 @@
                     signal: controller.signal
                 });
 
-                if (!streamsRes.ok) throw new Error("GPS Stream Error");
-
                 const streams = await streamsRes.json();
                 clearTimeout(timeoutId);
 
                 if (streams.latlng) { 
                     processStravaStreams(streams); 
-                    showAlert("PATH SYNCED SUCCESSFULLY!"); 
+                    showAlert("LATEST RUN SYNCED!"); 
                 } else {
                     showAlert("LAST RUN HAS NO GPS DATA");
                 }
             } catch (e) { 
                 console.error("Strava Sync Error:", e);
-                if (e.name === 'AbortError') showAlert("SYNC TIMEOUT. TRY AGAIN.");
-                else if (e.message === "Expired session") showAlert("SESSION EXPIRED.");
-                else showAlert("SYNC FAILED.");
+                showAlert(e.name === 'AbortError' ? "SYNC TIMEOUT" : "SYNC FAILED");
             } finally { 
-                resetSyncUI(); // Guaranteed to stop spinning
+                resetSyncUI();
             }
         }
 
@@ -495,8 +485,8 @@
             addSign(currentTrackCoords[maxEleIdx], '#a855f7', 'mountain');
             document.getElementById('camera-controls').classList.remove('hidden'); 
             
-            // Re-fit view with forced resize for Android/Mobile
-            zoomToTrack();
+            // Critical: wait for source update to propagate
+            setTimeout(() => zoomToTrack(), 300);
         }
 
         // --- MAP ENGINE ---
@@ -570,11 +560,18 @@
                     map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
                     map.once('idle', () => { map.setTerrain({ source: 'terrain', exaggeration: 1.5 }); toggleLabels(true); isMapReady = true; document.getElementById('gpx-btn').disabled = false; lucide.createIcons(); });
                 });
+                // Handle mobile resizes automatically
+                window.addEventListener('resize', () => map.resize());
             } catch (e) { }
         }
 
         function toggleLabels(visible) { if (!map) return; map.getStyle().layers.forEach(l => { if (l.type === 'symbol') map.setLayoutProperty(l.id, 'visibility', visible ? 'visible' : 'none'); }); }
-        function toggleFlyover() { if (!currentTrackCoords.length) return showAlert("IMPORT TRACK FIRST"); isFlyoverActive ? stopFlyover() : startFlyover(); }
+        
+        function toggleFlyover() { 
+            if (!currentTrackCoords.length) return showAlert("IMPORT TRACK FIRST"); 
+            if(isFlyoverActive) stopFlyover(); else startFlyover(); 
+        }
+
         function startFlyover() {
             isFlyoverActive = true; isPausedForPhoto = false; flyoverCurrentDist = 0; lastTimestamp = performance.now(); photoRecords.forEach(p => p.visited = false);
             document.getElementById('flyover-btn-text').textContent = "Stop Cinema"; toggleLabels(false);
@@ -583,8 +580,19 @@
             if (!document.getElementById('main-sidebar').classList.contains('collapsed')) toggleSidebar();
             flyoverRequestId = requestAnimationFrame(flyoverLoop);
         }
-        function stopFlyover() { isFlyoverActive = false; isPausedForPhoto = false; cancelAnimationFrame(flyoverRequestId); if (movieCursorMarker) { movieCursorMarker.remove(); movieCursorMarker = null; } document.getElementById('flyover-btn-text').textContent = "Cinematic Mode"; toggleLabels(true); }
-        function addSign(pt, color, icon) { const el = document.createElement('div'); el.className = 'sign-marker'; el.style.backgroundColor = color; el.innerHTML = `<i data-lucide="${icon}" class="text-white w-4 h-4"></i>`; waypointMarkers.push(new window.maplibregl.Marker({ element: el }).setLngLat([pt[0], pt[1]]).addTo(map)); lucide.createIcons(); }
+
+        function stopFlyover() { 
+            isFlyoverActive = false; isPausedForPhoto = false; cancelAnimationFrame(flyoverRequestId); 
+            if (movieCursorMarker) { movieCursorMarker.remove(); movieCursorMarker = null; } 
+            document.getElementById('flyover-btn-text').textContent = "Cinematic Mode"; toggleLabels(true); 
+        }
+
+        function addSign(pt, color, icon) { 
+            const el = document.createElement('div'); el.className = 'sign-marker'; el.style.backgroundColor = color; 
+            el.innerHTML = `<i data-lucide="${icon}" class="text-white w-4 h-4"></i>`; 
+            waypointMarkers.push(new window.maplibregl.Marker({ element: el }).setLngLat([pt[0], pt[1]]).addTo(map)); lucide.createIcons(); 
+        }
+
         function calculateDistance(lat1, lon1, lat2, lon2) { const R = 6371e3, φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180, Δφ = (lat2-lat1)*Math.PI/180, Δλ = (lon2-lon1)*Math.PI/180, a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2; return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
         function calculateBearing(lat1, lon1, lat2, lon2) { const φ1 = lat1*Math.PI/180, φ2 = lat2*Math.PI/180, Δλ = (lon2-lon1)*Math.PI/180, y = Math.sin(Δλ)*Math.cos(φ2), x = Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ); return (Math.atan2(y, x)*180/Math.PI + 360) % 360; }
 
@@ -599,7 +607,8 @@
                 currentTrackCoords = pts.map((p, i) => { if (p.ele > maxEle) { maxEle = p.ele; maxEleIdx = i; } if (i > 0) total += calculateDistance(pts[i-1].lat, pts[i-1].lon, p.lat, p.lon); return [p.lon, p.lat, p.ele, total]; });
                 flyoverTotalDist = total; map.getSource('route').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: currentTrackCoords.map(c => [c[0], c[1]]) } });
                 addSign(currentTrackCoords[0], '#10b981', 'flag'); addSign(currentTrackCoords[currentTrackCoords.length-1], '#ef4444', 'trophy'); addSign(currentTrackCoords[maxEleIdx], '#a855f7', 'mountain');
-                document.getElementById('camera-controls').classList.remove('hidden'); zoomToTrack();
+                document.getElementById('camera-controls').classList.remove('hidden'); 
+                setTimeout(() => zoomToTrack(), 300);
             };
             reader.readAsText(e.target.files[0]);
         });
@@ -629,25 +638,33 @@
             sidebar.classList.toggle('collapsed');
             if (sidebar.classList.contains('collapsed')) { main.classList.remove('ml-80'); main.classList.add('ml-0'); icon.setAttribute('data-lucide', 'chevron-right'); } 
             else { main.classList.remove('ml-0'); main.classList.add('ml-80'); icon.setAttribute('data-lucide', 'chevron-left'); }
-            lucide.createIcons(); setTimeout(() => { if(map) map.resize(); }, 450);
+            lucide.createIcons(); 
+            setTimeout(() => { if(map) { map.resize(); } }, 450);
         }
 
         function zoomToTrack() { 
             if (!currentTrackCoords.length || !map) return; 
             
-            // Critical for Android/Mobile: force engine to update dimensions
+            // Forced resize before viewport calculation
             map.resize();
 
             const start = [currentTrackCoords[0][0], currentTrackCoords[0][1]];
             const b = currentTrackCoords.reduce((acc, c) => acc.extend([c[0], c[1]]), new window.maplibregl.LngLatBounds(start, start));
             
-            // Adjusting padding and timing for better mobile response
-            map.fitBounds(b, { 
-                padding: window.innerWidth < 768 ? 40 : 80, 
-                pitch: 45, 
-                duration: 2000,
-                essential: true 
-            }); 
+            // Reduced padding for mobile to avoid "bounds out of view" error
+            const isMobile = window.innerWidth < 768;
+            const pad = isMobile ? 30 : 80;
+
+            // Small delay to ensure resize is complete in the DOM
+            setTimeout(() => {
+                map.fitBounds(b, { 
+                    padding: pad, 
+                    pitch: 45, 
+                    duration: 2000,
+                    essential: true,
+                    linear: false
+                }); 
+            }, 50);
         }
 
         function resetCamera() { stopFlyover(); map.easeTo({ bearing: 0, pitch: 0, duration: 1500 }); }
