@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Run3D Path - Strava Cinematic V7.8</title>
+    <title>Run3D Path - Strava Cinematic V7.9</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -130,7 +130,7 @@
         </div>
     </div>
 
-    <!-- API Modal -->
+    <!-- API Configuration Modal -->
     <div id="settings-modal">
         <div class="bg-slate-900 border border-indigo-500/20 p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl space-y-8">
             <div class="text-center">
@@ -176,7 +176,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-black text-white tracking-tighter">Run3D</h1>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">V7.8 Turbo</p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">V7.9 Turbo</p>
                 </div>
             </div>
             <button onclick="toggleSettings()" class="p-2.5 bg-slate-900 rounded-xl text-slate-600 hover:text-indigo-400 border border-slate-800 transition-colors">
@@ -206,7 +206,7 @@
                             </div>
                         </div>
 
-                        <!-- Step 2 Button (Fixed) -->
+                        <!-- Step 2 Button -->
                         <button onclick="connectStrava()" id="btn-actual-connect" class="btn-control btn-strava shadow-xl disabled:opacity-20 group transition-all" disabled>
                             <i data-lucide="log-in" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
                             <span id="btn-connect-text">STEP 2: LOGIN TO STRAVA</span>
@@ -280,14 +280,16 @@
     </main>
 
     <script>
-        // --- API HELPERS ---
+        // --- API HELPERS & HARDCODED CREDENTIALS ---
         function getKeys() {
             try {
-                return {
-                    id: localStorage.getItem('strava_api_id') || '',
-                    secret: localStorage.getItem('strava_api_secret') || ''
-                };
-            } catch(e) { return { id: '', secret: '' }; }
+                // If keys are not in localStorage, use your provided hardcoded values
+                const id = localStorage.getItem('strava_api_id') || '212229';
+                const secret = localStorage.getItem('strava_api_secret') || '68086f28b4970e5856fd8f8d32a7b51df738174d';
+                return { id, secret };
+            } catch(e) { 
+                return { id: '212229', secret: '68086f28b4970e5856fd8f8d32a7b51df738174d' }; 
+            }
         }
 
         let STRAVA_CLIENT_ID = getKeys().id;
@@ -345,24 +347,22 @@
             } catch(e) { showAlert("STORAGE ERROR"); }
         }
 
-        // --- STRAVA FLOW (REWRITTEN FOR SANDBOX BREAKOUT) ---
+        // --- STRAVA FLOW ---
         function connectStrava() {
             const keys = getKeys();
             if (!keys.id) { toggleSettings(); return; }
 
             // CONSTRUCTION
+            // In your case: https://dimaklit.github.io/Run3DPath/
             const redirectUri = window.location.href.split('?')[0].split('#')[0];
             const scope = 'activity:read_all';
             const authUrl = `https://www.strava.com/oauth/authorize?client_id=${keys.id}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`;
             
-            console.log("Redirecting to Strava:", authUrl);
             showAlert("REDIRECTING TO STRAVA...");
 
-            // Use window.open with _top to escape iframe if possible
             try {
                 window.open(authUrl, '_top');
             } catch (e) {
-                // Fallback if blocked
                 const link = document.createElement('a');
                 link.href = authUrl;
                 link.target = '_top';
