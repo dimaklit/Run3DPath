@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V9.2 Prime Fix</title>
+    <title>Run3D Mobile - V9.3 Ultimate Prime</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -12,153 +12,161 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@700&display=swap');
 
-        :root { --accent: #6366f1; --strava: #FC4C02; }
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #020617; font-family: 'Inter', sans-serif; touch-action: manipulation; }
+        :root { --accent: #6366f1; --strava: #FC4C02; --bg: #020617; }
+        body { margin: 0; padding: 0; overflow: hidden; background-color: var(--bg); font-family: 'Inter', sans-serif; touch-action: manipulation; }
         
-        #map { position: absolute; inset: 0; width: 100%; height: 100%; }
+        #map { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
 
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        /* Элементы управления с эффектом размытия */
+        .glass-ui {
+            background: rgba(15, 23, 42, 0.82);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
         }
 
-        #map-actions {
-            position: fixed; right: 16px; bottom: 120px;
-            display: flex; flex-direction: column; gap: 12px; z-index: 50;
+        /* Правый блок кнопок (HUD) */
+        #hud-controls {
+            position: fixed; right: 16px; bottom: 130px;
+            display: flex; flex-direction: column; gap: 14px; z-index: 100;
         }
 
-        .float-btn {
-            width: 58px; height: 58px; border-radius: 50%;
+        .hud-btn {
+            width: 54px; height: 54px; border-radius: 18px;
             display: flex; align-items: center; justify-content: center;
-            color: white; box-shadow: 0 10px 35px rgba(0,0,0,0.5);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            touch-action: manipulation;
+            color: white; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             -webkit-tap-highlight-color: transparent;
         }
-        .float-btn:active { transform: scale(0.85); background: var(--accent); }
+        .hud-btn:active { transform: scale(0.88); background: var(--accent); }
 
-        #bottom-dock {
-            position: fixed; bottom: 24px; left: 16px; right: 16px;
-            height: 80px; border-radius: 28px; padding: 10px;
-            display: flex; align-items: center; justify-content: space-between;
-            gap: 12px; z-index: 100;
+        /* Нижний док управления (Dock) */
+        #main-dock {
+            position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); 
+            left: 16px; right: 16px; height: 84px; 
+            border-radius: 28px; padding: 10px;
+            display: flex; align-items: center; z-index: 100;
         }
 
-        #data-drawer {
+        /* Стиль кнопки Strava */
+        .strava-prime {
+            background: var(--strava);
+            box-shadow: 0 8px 25px rgba(252, 76, 2, 0.3);
+            transition: all 0.2s;
+        }
+        .strava-prime:active { transform: scale(0.96); filter: brightness(1.1); }
+
+        /* Выдвижная панель (Drawer) */
+        #asset-drawer {
             position: fixed; bottom: 0; left: 0; right: 0;
             height: 75vh; transform: translateY(100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
             border-radius: 36px 36px 0 0; z-index: 200;
+            padding-bottom: env(safe-area-inset-bottom);
         }
-        #data-drawer.open { transform: translateY(0); }
+        #asset-drawer.open { transform: translateY(0); }
 
-        .drawer-handle {
-            width: 48px; height: 6px; background: rgba(255,255,255,0.2);
-            border-radius: 3px; margin: 12px auto;
+        .handle-bar {
+            width: 42px; height: 5px; background: rgba(255,255,255,0.2);
+            border-radius: 10px; margin: 12px auto 24px;
         }
 
-        .sync-spinner { animation: spin 1s linear infinite; }
+        /* Анимации */
+        .spinning { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-        #settings-modal {
-            position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95);
-            z-index: 3000; display: none; align-items: center; justify-content: center; padding: 24px;
+        #settings-overlay {
+            position: fixed; inset: 0; background: rgba(2, 6, 23, 0.96);
+            z-index: 3000; display: none; align-items: center; justify-content: center; padding: 30px;
         }
-        #settings-modal.active { display: flex; }
+        #settings-overlay.active { display: flex; }
 
-        .btn-strava-main {
-            background-color: var(--strava);
-            transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .btn-strava-main:active { transform: scale(0.96); opacity: 0.9; }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar { width: 0px; }
     </style>
 </head>
-<body class="text-slate-200">
+<body class="text-slate-100">
 
     <div id="map"></div>
 
-    <!-- Status Pill -->
-    <div class="fixed top-10 left-1/2 -translate-x-1/2 z-[60]">
-        <div id="status-pill" class="glass-panel px-6 py-3 rounded-full flex items-center gap-3 border border-white/10 shadow-2xl transition-all opacity-0 scale-90">
-            <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-            <span id="status-text" class="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-50">READY</span>
+    <!-- Floating Top Status -->
+    <div class="fixed top-12 left-0 right-0 flex justify-center z-50 pointer-events-none">
+        <div id="status-pill" class="glass-ui px-6 py-2.5 rounded-full flex items-center gap-3 opacity-0 translate-y-[-20px] transition-all duration-500">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
+            <span id="status-text" class="text-[10px] font-black uppercase tracking-[0.25em] text-white">SYSTEM ONLINE</span>
         </div>
     </div>
 
-    <!-- Floating Map Controls -->
-    <div id="map-actions">
-        <button onclick="zoomToTrack()" class="float-btn glass-panel" id="btn-fit">
-            <i data-lucide="maximize" class="w-6 h-6"></i>
+    <!-- Map Interaction HUD -->
+    <div id="hud-controls">
+        <button onclick="zoomToTrack()" class="hud-btn glass-ui" id="mobile-fit-btn">
+            <i data-lucide="maximize-2" class="w-6 h-6"></i>
         </button>
-        <button onclick="togglePitch()" class="float-btn glass-panel" id="btn-3d">
-            <i data-lucide="box" class="w-6 h-6"></i>
+        <button onclick="togglePitch()" class="hud-btn glass-ui">
+            <i data-lucide="layers-3" class="w-6 h-6"></i>
         </button>
-        <button onclick="resetCamera()" class="float-btn glass-panel">
-            <i data-lucide="compass" class="w-6 h-6"></i>
+        <button onclick="resetCamera()" class="hud-btn glass-ui">
+            <i data-lucide="navigation" class="w-6 h-6"></i>
         </button>
-        <button onclick="toggleDrawer()" class="float-btn glass-panel border-indigo-500/40">
-            <i data-lucide="layout-grid" class="w-6 h-6 text-indigo-400"></i>
+        <button onclick="toggleDrawer()" class="hud-btn glass-ui border-indigo-500/30">
+            <i data-lucide="layout-template" class="w-6 h-6 text-indigo-400"></i>
         </button>
     </div>
 
-    <!-- Mobile Action Dock -->
-    <div id="bottom-dock" class="glass-panel shadow-2xl">
-        <div id="strava-unconnected" class="w-full flex gap-3 h-full">
-            <button id="btn-strava-connect" onclick="connectStrava()" class="flex-1 btn-strava-main rounded-[20px] flex items-center justify-center gap-3 font-black text-xs uppercase tracking-wider text-white shadow-lg">
-                <i data-lucide="log-in" class="w-5 h-5"></i> Connect Strava
+    <!-- Main Action Dock -->
+    <div id="main-dock" class="glass-ui">
+        <!-- State: Disconnected -->
+        <div id="strava-unconnected" class="w-full h-full flex gap-3">
+            <button onclick="connectStrava()" class="flex-1 strava-prime rounded-[22px] flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest text-white">
+                <i data-lucide="link" class="w-5 h-5"></i> Connect Strava
             </button>
-            <button onclick="toggleSettings()" class="w-[64px] glass-panel rounded-[20px] flex items-center justify-center active:scale-90 transition-transform">
-                <i data-lucide="settings" class="w-6 h-6 text-slate-400"></i>
+            <button onclick="toggleSettings()" class="w-[68px] glass-ui rounded-[22px] flex items-center justify-center text-slate-400">
+                <i data-lucide="cog" class="w-6 h-6"></i>
             </button>
         </div>
 
-        <div id="strava-connected" class="hidden w-full flex gap-3 h-full">
-            <button id="sync-btn" onclick="fetchLatestStravaActivity()" class="w-[64px] glass-panel rounded-[20px] flex items-center justify-center active:scale-90 transition-transform">
+        <!-- State: Connected -->
+        <div id="strava-connected" class="hidden w-full h-full flex gap-3">
+            <button id="sync-btn" onclick="fetchLatestStravaActivity()" class="w-[68px] glass-ui rounded-[22px] flex items-center justify-center">
                 <i data-lucide="refresh-cw" id="sync-icon" class="w-6 h-6 text-indigo-400"></i>
             </button>
-            <button id="flyover-btn" onclick="toggleFlyover()" class="flex-1 bg-indigo-600 rounded-[20px] flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest text-white shadow-indigo-500/20 shadow-lg">
-                <i data-lucide="play" class="w-5 h-5 fill-current"></i> <span id="fly-text">Turbo Cinema</span>
+            <button id="flyover-btn" onclick="toggleFlyover()" class="flex-1 bg-indigo-600 rounded-[22px] flex items-center justify-center gap-3 font-black text-xs uppercase tracking-[0.15em] text-white shadow-xl shadow-indigo-600/20">
+                <i data-lucide="rocket" class="w-5 h-5 fill-current"></i> <span id="fly-text">Launch Cinema</span>
             </button>
         </div>
     </div>
 
-    <!-- Data Drawer -->
-    <div id="data-drawer" class="glass-panel border-t border-white/10 p-8 overflow-hidden flex flex-col">
-        <div onclick="toggleDrawer()" class="w-full pb-2"><div class="drawer-handle"></div></div>
+    <!-- Asset Drawer -->
+    <div id="asset-drawer" class="glass-ui p-8 overflow-hidden flex flex-col">
+        <div onclick="toggleDrawer()" class="w-full"><div class="handle-bar"></div></div>
         
-        <div class="flex-1 overflow-y-auto space-y-10 custom-scrollbar pt-4">
+        <div class="flex-1 overflow-y-auto space-y-10 custom-scroll pt-2">
             <section>
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em]">Activity Stats</h3>
-                    <i data-lucide="activity" class="w-4 h-4 text-slate-600"></i>
-                </div>
+                <h3 class="text-[11px] font-black uppercase text-slate-500 tracking-[0.25em] mb-6 flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Performance
+                </h3>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="p-5 bg-white/5 rounded-3xl border border-white/5">
+                    <div class="p-6 bg-white/5 rounded-[28px] border border-white/5">
                         <p class="text-[10px] text-slate-500 uppercase font-bold mb-2">Distance</p>
-                        <p id="stat-dist" class="text-2xl font-black text-indigo-400 tracking-tight">0.00 <span class="text-xs text-slate-600">km</span></p>
+                        <p id="stat-dist" class="text-2xl font-black text-indigo-400">0.00 <span class="text-[10px] text-slate-700">KM</span></p>
                     </div>
-                    <div class="p-5 bg-white/5 rounded-3xl border border-white/5">
+                    <div class="p-6 bg-white/5 rounded-[28px] border border-white/5">
                         <p class="text-[10px] text-slate-500 uppercase font-bold mb-2">Elevation</p>
-                        <p id="stat-peak" class="text-2xl font-black text-emerald-400 tracking-tight">0 <span class="text-xs text-slate-600">m</span></p>
+                        <p id="stat-peak" class="text-2xl font-black text-emerald-400">0 <span class="text-[10px] text-slate-700">M</span></p>
                     </div>
                 </div>
             </section>
 
             <section>
-                <h3 class="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em] mb-6">Import Tools</h3>
+                <h3 class="text-[11px] font-black uppercase text-slate-500 tracking-[0.25em] mb-6 flex items-center gap-2">
+                    <i data-lucide="folder-up" class="w-3.5 h-3.5"></i> Source Files
+                </h3>
                 <div class="flex gap-4">
-                    <button onclick="document.getElementById('gpx-input').click()" class="flex-1 py-5 bg-slate-800/80 rounded-3xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all">
-                        <i data-lucide="map-pin" class="w-4 h-4 text-indigo-400"></i> GPX
+                    <button onclick="document.getElementById('gpx-input').click()" class="flex-1 py-5 bg-slate-800 rounded-3xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3">
+                        <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i> GPX
                     </button>
-                    <button onclick="document.getElementById('photo-input').click()" class="flex-1 py-5 bg-slate-800/80 rounded-3xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all">
+                    <button onclick="document.getElementById('photo-input').click()" class="flex-1 py-5 bg-slate-800 rounded-3xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3">
                         <i data-lucide="camera" class="w-4 h-4 text-purple-400"></i> Photos
                     </button>
                 </div>
@@ -170,70 +178,62 @@
         </div>
     </div>
 
-    <!-- API Modal -->
-    <div id="settings-modal">
+    <!-- API Overlay -->
+    <div id="settings-overlay">
         <div class="bg-slate-900 border border-white/10 p-10 rounded-[3rem] w-full max-w-sm space-y-8 shadow-2xl">
-            <div class="text-center space-y-2">
-                <h3 class="text-2xl font-black tracking-tight">API Setup</h3>
-                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Strava Developer Keys</p>
+            <div class="text-center">
+                <h3 class="text-2xl font-black tracking-tighter">APP KEYS</h3>
+                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">Strava API Configuration</p>
             </div>
             <div class="space-y-4">
-                <div class="space-y-1">
-                    <label class="text-[9px] font-black text-slate-600 uppercase ml-2">Client ID</label>
-                    <input type="text" id="input-client-id" class="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. 212229">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[9px] font-black text-slate-600 uppercase ml-2">Client Secret</label>
-                    <input type="password" id="input-client-secret" class="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-indigo-500 transition-colors" placeholder="••••••••••••••••">
-                </div>
+                <input type="text" id="input-client-id" class="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-indigo-500" placeholder="Client ID">
+                <input type="password" id="input-client-secret" class="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-indigo-500" placeholder="Client Secret">
             </div>
-            <div class="space-y-3 pt-2">
-                <button onclick="saveApiSettings()" class="w-full py-5 bg-indigo-600 rounded-[20px] font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-600/20 active:scale-95 transition-transform">Initialize App</button>
-                <button onclick="toggleSettings()" class="w-full py-2 text-slate-500 text-[10px] font-black uppercase tracking-widest">Close</button>
+            <div class="flex flex-col gap-3">
+                <button onclick="saveApiSettings()" class="w-full py-5 bg-indigo-600 rounded-2xl font-black text-xs uppercase tracking-widest">Update Session</button>
+                <button onclick="toggleSettings()" class="w-full py-2 text-slate-600 text-[10px] font-bold uppercase">Back</button>
             </div>
         </div>
     </div>
 
-    <div id="photo-overlay" onclick="this.classList.remove('active')" class="z-[2000] backdrop-blur-2xl transition-all duration-500">
-        <div class="relative p-4 flex flex-col items-center gap-6">
-            <img id="overlay-img" src="" alt="" class="rounded-[2.5rem] shadow-2xl border-4 border-white/10 max-w-[90vw]">
-            <div class="bg-indigo-600 px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl">Capture View</div>
-        </div>
+    <div id="photo-overlay" onclick="this.classList.remove('active')" class="fixed inset-0 z-[2000] backdrop-blur-2xl hidden items-center justify-center p-6">
+        <img id="overlay-img" src="" alt="" class="rounded-[2rem] shadow-2xl border-2 border-white/10 max-h-[80vh] w-auto">
     </div>
 
     <script>
         // --- CONSTANTS ---
-        const DEFAULT_CLIENT_ID = '212229';
-        const DEFAULT_CLIENT_SECRET = '68086f28b4970e5856fd8f8d32a7b51df738174d';
+        const CLIENT_ID_DEF = '212229';
+        const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
 
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 230, movieCursorMarker = null;
 
-        // --- CORE UI ---
-        function toggleDrawer() { document.getElementById('data-drawer').classList.toggle('open'); }
+        // --- CORE UI ENGINE ---
+        function toggleDrawer() { document.getElementById('asset-drawer').classList.toggle('open'); }
         function toggleSettings() { 
-            const keys = getStoredKeys();
+            const keys = getKeys();
             document.getElementById('input-client-id').value = keys.id;
             document.getElementById('input-client-secret').value = keys.secret;
-            document.getElementById('settings-modal').classList.toggle('active'); 
+            document.getElementById('settings-overlay').classList.toggle('active'); 
         }
-        function showStatus(t) {
-            const p = document.getElementById('status-pill');
+        
+        function updateStatus(msg) {
+            const pill = document.getElementById('status-pill');
             const txt = document.getElementById('status-text');
-            txt.innerText = t;
-            p.classList.remove('opacity-0', 'scale-90');
-            p.classList.add('opacity-100', 'scale-100');
+            txt.innerText = msg;
+            pill.style.opacity = '1';
+            pill.style.transform = 'translateY(0) scale(1)';
             setTimeout(() => {
-                p.classList.add('opacity-0', 'scale-90');
-                p.classList.remove('opacity-100', 'scale-100');
+                pill.style.opacity = '0';
+                pill.style.transform = 'translateY(-20px) scale(0.9)';
             }, 3000);
         }
 
-        function getStoredKeys() {
+        function getKeys() {
             return {
-                id: localStorage.getItem('strava_api_id') || DEFAULT_CLIENT_ID,
-                secret: localStorage.getItem('strava_api_secret') || DEFAULT_CLIENT_SECRET
+                id: localStorage.getItem('strava_api_id') || CLIENT_ID_DEF,
+                secret: localStorage.getItem('strava_api_secret') || CLIENT_SEC_DEF
             };
         }
 
@@ -242,37 +242,35 @@
             const secret = document.getElementById('input-client-secret').value.trim();
             if(id) localStorage.setItem('strava_api_id', id);
             if(secret) localStorage.setItem('strava_api_secret', secret);
-            showStatus("API UPDATED");
-            setTimeout(() => window.location.reload(), 800);
+            window.location.reload();
         }
 
-        // --- STRAVA AUTH RE-ENGINEERED ---
+        // --- STRAVA CONNECTIVITY ---
         function connectStrava() {
-            const keys = getStoredKeys();
-            const redirectUri = window.location.href.split('?')[0].split('#')[0];
-            const url = `https://www.strava.com/oauth/authorize?client_id=${keys.id}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:read_all`;
+            const keys = getKeys();
+            const currentUrl = window.location.href.split('?')[0].split('#')[0];
+            const url = `https://www.strava.com/oauth/authorize?client_id=${keys.id}&redirect_uri=${encodeURIComponent(currentUrl)}&response_type=code&scope=activity:read_all`;
             
-            showStatus("REDIRECTING...");
+            updateStatus("REDIRECTING...");
             
-            // Create a temporary hidden link to ensure standard browser navigation behavior
             const link = document.createElement('a');
             link.href = url;
-            link.target = '_top'; // Critical for iframe breakout
+            link.target = '_top'; // Breakout from Canvas iframe
             document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
         }
 
-        async function handleCallback() {
+        async function initApp() {
             const code = new URLSearchParams(window.location.search).get('code');
             if(!code) {
-                updateStravaUI(!!localStorage.getItem('strava_access_token'));
+                const token = localStorage.getItem('strava_access_token');
+                updateStravaUI(!!token);
                 return;
             }
             window.history.replaceState({}, document.title, window.location.pathname);
-            showStatus("AUTHORIZING...");
+            updateStatus("CONNECTING...");
             try {
-                const keys = getStoredKeys();
+                const keys = getKeys();
                 const res = await fetch('https://www.strava.com/oauth/token', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -284,7 +282,7 @@
                     updateStravaUI(true);
                     fetchLatestStravaActivity();
                 }
-            } catch(e) { showStatus("AUTH FAILED"); }
+            } catch(e) { updateStatus("AUTH FAILED"); }
         }
 
         function updateStravaUI(connected) {
@@ -296,25 +294,25 @@
             const token = localStorage.getItem('strava_access_token');
             if(!token) return;
             const icon = document.getElementById('sync-icon');
-            icon.classList.add('sync-spinner');
-            showStatus("FETCHING RUN...");
+            icon.classList.add('spinning');
+            updateStatus("DOWNLOADING...");
             
             try {
                 const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { headers: { 'Authorization': `Bearer ${token}` } });
-                if(actsRes.status === 401) { localStorage.removeItem('strava_access_token'); updateStravaUI(false); return showStatus("SESSION EXPIRED"); }
+                if(actsRes.status === 401) { localStorage.removeItem('strava_access_token'); updateStravaUI(false); return updateStatus("RE-LOGIN REQUIRED"); }
                 
                 const activities = await actsRes.json();
-                if(!activities.length) return showStatus("NO RUNS FOUND");
+                if(!activities.length) return updateStatus("NO ACTIVITIES");
 
                 const streamsRes = await fetch(`https://www.strava.com/api/v3/activities/${activities[0].id}/streams?keys=latlng,altitude&key_by_type=true`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const streams = await streamsRes.json();
 
                 if(streams.latlng) {
                     processStreams(streams);
-                    showStatus("SYNC COMPLETE");
+                    updateStatus("PATH LOADED");
                 }
-            } catch(e) { showStatus("SYNC ERROR"); }
-            finally { icon.classList.remove('sync-spinner'); }
+            } catch(e) { updateStatus("SYNC ERROR"); }
+            finally { icon.classList.remove('spinning'); }
         }
 
         function processStreams(streams) {
@@ -329,21 +327,22 @@
             map.getSource('route').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: currentTrackCoords.map(c => [c[0], c[1]]) } });
             addSign(currentTrackCoords[0], '#10b981', 'flag');
             addSign(currentTrackCoords[currentTrackCoords.length-1], '#ef4444', 'trophy');
-            document.getElementById('stat-dist').innerHTML = `${(total/1000).toFixed(2)} <span class="text-[10px] text-slate-600 uppercase">km</span>`;
-            document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-[10px] text-slate-600 uppercase">m</span>`;
+            document.getElementById('stat-dist').innerHTML = `${(total/1000).toFixed(2)} <span class="text-[10px] opacity-40">KM</span>`;
+            document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-[10px] opacity-40">M</span>`;
+            
             setTimeout(() => zoomToTrack(), 800);
         }
 
-        // --- MAP ENGINE SECURE BOOT ---
+        // --- MAP ENGINE (SECURE BOOT) ---
         async function secureMapInit() {
             try {
-                const safeLocation = { 
+                const proxyLocation = { 
                     href: 'https://localhost/', protocol: 'https:', origin: 'https://localhost',
                     host: 'localhost', hostname: 'localhost', pathname: '/', search: '', hash: '', toString: () => 'https://localhost/'
                 };
-                const globalProxy = new Proxy(window, {
+                const windowProxy = new Proxy(window, {
                     get(t, p) {
-                        if (p === 'location') return safeLocation;
+                        if (p === 'location') return proxyLocation;
                         if (p === 'history') return { pushState: () => {}, replaceState: () => {}, state: null };
                         if (['URL', 'Blob', 'Worker', 'File', 'FileReader', 'navigator', 'document'].includes(p)) return window[p];
                         const v = window[p];
@@ -351,20 +350,16 @@
                         return v;
                     }
                 });
-
-                const libResponse = await fetch('https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js');
-                const libCode = await libResponse.text();
+                const libRes = await fetch('https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js');
+                const libCode = await libRes.text();
                 const bundle = new Function('window', 'self', 'location', 'history', 'globalThis', `${libCode}; return maplibregl;`);
-                window.maplibregl = bundle(globalProxy, globalProxy, safeLocation, globalProxy.history, globalProxy);
+                window.maplibregl = bundle(windowProxy, windowProxy, proxyLocation, windowProxy.history, windowProxy);
                 
-                initMapInstance();
-            } catch (e) { initMapInstance(); }
+                initMap();
+            } catch (e) { initMap(); }
         }
 
-        function initMapInstance() {
-            const loader = document.querySelector('#map > div');
-            if(loader) loader.remove();
-
+        function initMap() {
             map = new window.maplibregl.Map({
                 container: 'map', style: `https://api.maptiler.com/maps/hybrid/style.json?key=${MT_KEY}`,
                 center: [0, 20], zoom: 2, pitch: 0, antialias: true, attributionControl: false,
@@ -373,39 +368,41 @@
 
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-                map.addLayer({ id: 'route-glow', type: 'line', source: 'route', paint: { 'line-color': '#4f46e5', 'line-width': 12, 'line-opacity': 0.3 } });
-                map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#818cf8', 'line-width': 4.5 } });
+                map.addLayer({ id: 'route-glow', type: 'line', source: 'route', paint: { 'line-color': '#4f46e5', 'line-width': 14, 'line-opacity': 0.25 } });
+                map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#818cf8', 'line-width': 4 } });
                 map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
-                map.setTerrain({ source: 'terrain', exaggeration: 1.6 });
+                map.setTerrain({ source: 'terrain', exaggeration: 1.65 });
                 lucide.createIcons();
-                handleCallback();
+                initApp();
             });
             window.addEventListener('resize', () => map.resize());
         }
 
-        // --- ULTRA-STABLE MOBILE ZOOM ---
+        // --- MOBILE-OPTIMIZED FIT VIEW ---
         function zoomToTrack() {
             if(!currentTrackCoords.length || !map) return;
-            showStatus("TARGETING...");
+            updateStatus("FOCUSING...");
             
-            // Step 1: Physical resize
+            // Step 1: Force UI Sync
             map.resize();
             
             const bounds = new window.maplibregl.LngLatBounds();
             currentTrackCoords.forEach(c => bounds.extend([c[0], c[1]]));
 
-            // Step 2: Multi-stage delay for mobile browsers
+            // Step 2: Smooth transition with specific mobile padding
             setTimeout(() => {
                 map.resize();
                 try {
                     map.fitBounds(bounds, { 
-                        padding: {top: 80, bottom: 160, left: 40, right: 40}, 
-                        pitch: 45, duration: 3000, essential: true 
+                        padding: {top: 120, bottom: 200, left: 40, right: 40}, 
+                        pitch: 45, 
+                        duration: 2500, 
+                        essential: true 
                     });
                 } catch(e) {
                     map.flyTo({ center: [currentTrackCoords[0][0], currentTrackCoords[0][1]], zoom: 15, duration: 2000 });
                 }
-            }, 250);
+            }, 200);
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -415,7 +412,7 @@
         }
 
         function resetCamera() { map.easeTo({ center: currentTrackCoords.length ? [currentTrackCoords[0][0], currentTrackCoords[0][1]] : [0,0], bearing: 0, pitch: 0, duration: 1500 }); }
-        function togglePitch() { map.easeTo({ pitch: map.getPitch() > 10 ? 0 : 70, duration: 1000 }); }
+        function togglePitch() { map.easeTo({ pitch: map.getPitch() > 10 ? 0 : 72, duration: 1000 }); }
         function addSign(pt, color, icon) {
             const el = document.createElement('div'); el.className = 'sign-marker'; el.style.backgroundColor = color;
             el.innerHTML = `<i data-lucide="${icon}" class="text-white w-4 h-4"></i>`;
@@ -423,12 +420,12 @@
             lucide.createIcons();
         }
 
-        // Cinematic 
+        // Cinematic Cycle
         function toggleFlyover() { isFlyoverActive ? stopFlyover() : startFlyover(); }
         function startFlyover() {
-            if(!currentTrackCoords.length) return showStatus("NO PATH");
+            if(!currentTrackCoords.length) return updateStatus("NO TRACK");
             isFlyoverActive = true; flyoverCurrentDist = 0; lastTimestamp = performance.now();
-            document.getElementById('fly-text').innerText = "STOP";
+            document.getElementById('fly-text').innerText = "Abort Mission";
             const el = document.createElement('div'); el.className = 'movie-cursor';
             movieCursorMarker = new window.maplibregl.Marker({ element: el }).setLngLat([currentTrackCoords[0][0], currentTrackCoords[0][1]]).addTo(map);
             flyoverRequestId = requestAnimationFrame(flyoverLoop);
@@ -436,7 +433,7 @@
         function stopFlyover() {
             isFlyoverActive = false; cancelAnimationFrame(flyoverRequestId);
             if(movieCursorMarker) { movieCursorMarker.remove(); movieCursorMarker = null; }
-            document.getElementById('fly-text').innerText = "TURBO CINEMA";
+            document.getElementById('fly-text').innerText = "Launch Cinema";
         }
         function flyoverLoop(timestamp) {
             if(!isFlyoverActive || !map) return;
@@ -447,7 +444,7 @@
             const next = getPointAtDist(flyoverCurrentDist + 40);
             const bear = calculateBearing(pos[1], pos[0], next[1], next[0]);
             movieCursorMarker.setLngLat([pos[0], pos[1]]);
-            map.jumpTo({ center: [pos[0], pos[1]], bearing: bear, pitch: 75, zoom: 18 });
+            map.jumpTo({ center: [pos[0], pos[1]], bearing: bear, pitch: 75, zoom: 18.2 });
             flyoverRequestId = requestAnimationFrame(flyoverLoop);
         }
         function getPointAtDist(d) {
@@ -465,13 +462,13 @@
             return (Math.atan2(Math.sin(Δλ)*Math.cos(φ2), Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ))*180/Math.PI+360)%360;
         }
 
-        // Local Uploads
+        // --- FILE IMPORTS ---
         document.getElementById('gpx-input').addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const xml = (new DOMParser()).parseFromString(ev.target.result, "text/xml");
                 const pts = Array.from(xml.getElementsByTagName("trkpt")).map(p => ({ lat: parseFloat(p.getAttribute("lat")), lon: parseFloat(p.getAttribute("lon")), ele: p.getElementsByTagName("ele")[0] ? parseFloat(p.getElementsByTagName("ele")[0].textContent) : 0 }));
-                if (!pts.length) return showStatus("EMPTY GPX");
+                if (!pts.length) return updateStatus("INVALID GPX");
                 waypointMarkers.forEach(m => m.remove()); waypointMarkers = [];
                 let total = 0, maxEle = -Infinity;
                 currentTrackCoords = pts.map((p, i) => { if (p.ele > maxEle) maxEle = p.ele; if (i > 0) total += calculateDistance(pts[i-1].lat, pts[i-1].lon, p.lat, p.lon); return [p.lon, p.lat, p.ele, total]; });
@@ -495,9 +492,9 @@
                             const dLat = (lat[0] + lat[1]/60 + lat[2]/3600) * (EXIF.getTag(this, "GPSLatitudeRef") === "S" ? -1 : 1);
                             const dLon = (lon[0] + lon[1]/60 + lat[2]/3600) * (EXIF.getTag(this, "GPSLongitudeRef") === "W" ? -1 : 1);
                             const el = document.createElement('div'); el.className = 'photo-marker shadow-2xl'; el.style.backgroundImage = `url(${ev.target.result})`;
-                            el.onclick = () => { document.getElementById('overlay-img').src = ev.target.result; document.getElementById('photo-overlay').classList.add('active'); };
+                            el.onclick = () => { document.getElementById('overlay-img').src = ev.target.result; document.getElementById('photo-overlay').style.display = 'flex'; };
                             new window.maplibregl.Marker({ element: el }).setLngLat([dLon, dLat]).addTo(map);
-                            const card = document.createElement('div'); card.className = 'aspect-square rounded-2xl overflow-hidden border border-white/10 shadow-lg';
+                            const card = document.createElement('div'); card.className = 'aspect-square rounded-2xl overflow-hidden border border-white/10';
                             card.innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
                             grid.appendChild(card);
                         }
