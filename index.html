@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Run3D Path - Strava Cinematic V8.1</title>
+    <title>Run3D Path - Strava Cinematic V8.2</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -176,7 +176,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-black text-white tracking-tighter">Run3D</h1>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">V8.1 Turbo</p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">V8.2 Turbo</p>
                 </div>
             </div>
             <button onclick="toggleSettings()" class="p-2.5 bg-slate-900 rounded-xl text-slate-600 hover:text-indigo-400 border border-slate-800 transition-colors">
@@ -346,6 +346,14 @@
             } catch(e) { showAlert("STORAGE ERROR"); }
         }
 
+        // --- UI RESET UTILITY ---
+        function resetSyncUI() {
+            const syncIcon = document.getElementById('sync-icon');
+            const syncBtnText = document.getElementById('sync-btn-text');
+            if(syncIcon) syncIcon.classList.remove('animate-spin');
+            if(syncBtnText) syncBtnText.innerText = "SYNC LATEST RUN";
+        }
+
         // --- STRAVA FLOW ---
         function connectStrava() {
             const keys = getKeys();
@@ -420,7 +428,7 @@
             showAlert("FETCHING FROM STRAVA...");
             
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+            const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20s
 
             try {
                 const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { 
@@ -438,11 +446,11 @@
 
                 const activities = await actsRes.json();
                 if (!Array.isArray(activities) || activities.length === 0) {
-                    showAlert("NO RUNS FOUND IN YOUR ACCOUNT");
+                    showAlert("NO RUNS FOUND");
+                    resetSyncUI();
                     return;
                 }
 
-                showAlert("DOWNLOADING GPS DATA...");
                 const streamsRes = await fetch(`https://www.strava.com/api/v3/activities/${activities[0].id}/streams?keys=latlng,altitude&key_by_type=true`, { 
                     headers: { 'Authorization': `Bearer ${token}` },
                     signal: controller.signal
@@ -455,22 +463,17 @@
 
                 if (streams.latlng) { 
                     processStravaStreams(streams); 
-                    showAlert("LATEST RUN SYNCED!"); 
+                    showAlert("PATH SYNCED SUCCESSFULLY!"); 
                 } else {
                     showAlert("LAST RUN HAS NO GPS DATA");
                 }
             } catch (e) { 
                 console.error("Strava Sync Error:", e);
-                if (e.name === 'AbortError') {
-                    showAlert("SYNC TIMEOUT. TRY AGAIN.");
-                } else if (e.message === "Expired session") {
-                    showAlert("SESSION EXPIRED. PLEASE RE-LOGIN.");
-                } else {
-                    showAlert("SYNC FAILED. CHECK INTERNET.");
-                }
+                if (e.name === 'AbortError') showAlert("SYNC TIMEOUT. TRY AGAIN.");
+                else if (e.message === "Expired session") showAlert("SESSION EXPIRED.");
+                else showAlert("SYNC FAILED.");
             } finally { 
-                if(syncIcon) syncIcon.classList.remove('animate-spin'); 
-                if(syncBtnText) syncBtnText.innerText = "SYNC LATEST RUN";
+                resetSyncUI(); // Guaranteed to stop spinning
             }
         }
 
@@ -491,6 +494,8 @@
             addSign(currentTrackCoords[currentTrackCoords.length-1], '#ef4444', 'trophy'); 
             addSign(currentTrackCoords[maxEleIdx], '#a855f7', 'mountain');
             document.getElementById('camera-controls').classList.remove('hidden'); 
+            
+            // Re-fit view with forced resize for Android/Mobile
             zoomToTrack();
         }
 
@@ -627,7 +632,24 @@
             lucide.createIcons(); setTimeout(() => { if(map) map.resize(); }, 450);
         }
 
-        function zoomToTrack() { if (!currentTrackCoords.length) return; const start = [currentTrackCoords[0][0], currentTrackCoords[0][1]], b = currentTrackCoords.reduce((acc, c) => acc.extend([c[0], c[1]]), new window.maplibregl.LngLatBounds(start, start)); map.fitBounds(b, { padding: 80, pitch: 45, duration: 2000 }); }
+        function zoomToTrack() { 
+            if (!currentTrackCoords.length || !map) return; 
+            
+            // Critical for Android/Mobile: force engine to update dimensions
+            map.resize();
+
+            const start = [currentTrackCoords[0][0], currentTrackCoords[0][1]];
+            const b = currentTrackCoords.reduce((acc, c) => acc.extend([c[0], c[1]]), new window.maplibregl.LngLatBounds(start, start));
+            
+            // Adjusting padding and timing for better mobile response
+            map.fitBounds(b, { 
+                padding: window.innerWidth < 768 ? 40 : 80, 
+                pitch: 45, 
+                duration: 2000,
+                essential: true 
+            }); 
+        }
+
         function resetCamera() { stopFlyover(); map.easeTo({ bearing: 0, pitch: 0, duration: 1500 }); }
         function togglePitch() { const is3D = map.getPitch() > 10; map.easeTo({ pitch: is3D ? 0 : 70, duration: 1000 }); }
         function showAlert(t) { const box = document.getElementById('alert-box'); document.getElementById('alert-text').textContent = t; box.classList.remove('translate-y-32', 'opacity-0'); setTimeout(() => box.classList.add('translate-y-32', 'opacity-0'), 4000); }
