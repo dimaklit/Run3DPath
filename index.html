@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V9.3 Ultimate Prime</title>
+    <title>Run3D Mobile - V9.4 Prime</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -12,7 +12,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
 
         :root { --accent: #6366f1; --strava: #FC4C02; --bg: #020617; }
         body { margin: 0; padding: 0; overflow: hidden; background-color: var(--bg); font-family: 'Inter', sans-serif; touch-action: manipulation; }
@@ -21,65 +21,72 @@
 
         /* Элементы управления с эффектом размытия */
         .glass-ui {
-            background: rgba(15, 23, 42, 0.82);
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
 
-        /* Правый блок кнопок (HUD) */
+        /* Верхний заголовок */
+        #top-header {
+            position: fixed; top: env(safe-area-inset-top, 10px); left: 16px; right: 16px;
+            height: 60px; border-radius: 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; z-index: 1000;
+        }
+
+        /* Блок кнопок HUD справа */
         #hud-controls {
-            position: fixed; right: 16px; bottom: 130px;
-            display: flex; flex-direction: column; gap: 14px; z-index: 100;
+            position: fixed; right: 16px; bottom: 140px;
+            display: flex; flex-direction: column; gap: 12px; z-index: 1000;
         }
 
         .hud-btn {
-            width: 54px; height: 54px; border-radius: 18px;
+            width: 56px; height: 56px; border-radius: 18px;
             display: flex; align-items: center; justify-content: center;
             color: white; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             -webkit-tap-highlight-color: transparent;
         }
-        .hud-btn:active { transform: scale(0.88); background: var(--accent); }
+        .hud-btn:active { transform: scale(0.9); background: var(--accent); }
 
-        /* Нижний док управления (Dock) */
+        /* Нижний док управления */
         #main-dock {
-            position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); 
-            left: 16px; right: 16px; height: 84px; 
-            border-radius: 28px; padding: 10px;
-            display: flex; align-items: center; z-index: 100;
+            position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); 
+            left: 16px; right: 16px; height: 86px; 
+            border-radius: 28px; padding: 12px;
+            display: flex; align-items: center; z-index: 1000;
         }
 
-        /* Стиль кнопки Strava */
-        .strava-prime {
+        .strava-btn {
             background: var(--strava);
-            box-shadow: 0 8px 25px rgba(252, 76, 2, 0.3);
+            box-shadow: 0 8px 25px rgba(252, 76, 2, 0.4);
             transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
-        .strava-prime:active { transform: scale(0.96); filter: brightness(1.1); }
+        .strava-btn:active { transform: scale(0.97); filter: brightness(1.1); }
 
-        /* Выдвижная панель (Drawer) */
+        /* Выдвижная панель */
         #asset-drawer {
             position: fixed; bottom: 0; left: 0; right: 0;
             height: 75vh; transform: translateY(100%);
             transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            border-radius: 36px 36px 0 0; z-index: 200;
+            border-radius: 36px 36px 0 0; z-index: 2000;
             padding-bottom: env(safe-area-inset-bottom);
         }
         #asset-drawer.open { transform: translateY(0); }
 
         .handle-bar {
-            width: 42px; height: 5px; background: rgba(255,255,255,0.2);
-            border-radius: 10px; margin: 12px auto 24px;
+            width: 44px; height: 5px; background: rgba(255,255,255,0.2);
+            border-radius: 10px; margin: 12px auto 20px;
         }
 
-        /* Анимации */
         .spinning { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         #settings-overlay {
-            position: fixed; inset: 0; background: rgba(2, 6, 23, 0.96);
-            z-index: 3000; display: none; align-items: center; justify-content: center; padding: 30px;
+            position: fixed; inset: 0; background: rgba(2, 6, 23, 0.98);
+            z-index: 4000; display: none; align-items: center; justify-content: center; padding: 30px;
         }
         #settings-overlay.active { display: flex; }
 
@@ -90,69 +97,78 @@
 
     <div id="map"></div>
 
-    <!-- Floating Top Status -->
-    <div class="fixed top-12 left-0 right-0 flex justify-center z-50 pointer-events-none">
-        <div id="status-pill" class="glass-ui px-6 py-2.5 rounded-full flex items-center gap-3 opacity-0 translate-y-[-20px] transition-all duration-500">
-            <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></div>
-            <span id="status-text" class="text-[10px] font-black uppercase tracking-[0.25em] text-white">SYSTEM ONLINE</span>
+    <!-- Visible Header with Version -->
+    <header id="top-header" class="glass-ui">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 p-2 rounded-lg">
+                <i data-lucide="mountain" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-black tracking-tight leading-none">Run3D Path</h1>
+                <p class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mt-1">v9.4 Mobile</p>
+            </div>
         </div>
-    </div>
+        <div id="status-indicator" class="flex items-center gap-2">
+            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter mr-1" id="engine-status">Engine Ready</span>
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+        </div>
+    </header>
 
-    <!-- Map Interaction HUD -->
+    <!-- Map HUD Controls -->
     <div id="hud-controls">
-        <button onclick="zoomToTrack()" class="hud-btn glass-ui" id="mobile-fit-btn">
-            <i data-lucide="maximize-2" class="w-6 h-6"></i>
+        <button onclick="zoomToTrack()" class="hud-btn glass-ui" id="mobile-fit-btn" title="Fit View">
+            <i data-lucide="expand" class="w-6 h-6"></i>
         </button>
-        <button onclick="togglePitch()" class="hud-btn glass-ui">
-            <i data-lucide="layers-3" class="w-6 h-6"></i>
+        <button onclick="togglePitch()" class="hud-btn glass-ui" title="Toggle 3D">
+            <i data-lucide="box" class="w-6 h-6"></i>
         </button>
-        <button onclick="resetCamera()" class="hud-btn glass-ui">
-            <i data-lucide="navigation" class="w-6 h-6"></i>
+        <button onclick="resetCamera()" class="hud-btn glass-ui" title="North Up">
+            <i data-lucide="compass" class="w-6 h-6"></i>
         </button>
-        <button onclick="toggleDrawer()" class="hud-btn glass-ui border-indigo-500/30">
-            <i data-lucide="layout-template" class="w-6 h-6 text-indigo-400"></i>
+        <button onclick="toggleDrawer()" class="hud-btn glass-ui border-indigo-500/30" title="Stats & Photos">
+            <i data-lucide="layout-grid" class="w-6 h-6 text-indigo-400"></i>
         </button>
     </div>
 
-    <!-- Main Action Dock -->
+    <!-- Main Action Dock (Strava is here) -->
     <div id="main-dock" class="glass-ui">
-        <!-- State: Disconnected -->
+        <!-- Not Connected -->
         <div id="strava-unconnected" class="w-full h-full flex gap-3">
-            <button onclick="connectStrava()" class="flex-1 strava-prime rounded-[22px] flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest text-white">
-                <i data-lucide="link" class="w-5 h-5"></i> Connect Strava
+            <button onclick="connectStrava()" class="flex-1 strava-btn rounded-[20px] flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest text-white shadow-lg">
+                <i data-lucide="link-2" class="w-5 h-5"></i> Connect Strava
             </button>
-            <button onclick="toggleSettings()" class="w-[68px] glass-ui rounded-[22px] flex items-center justify-center text-slate-400">
-                <i data-lucide="cog" class="w-6 h-6"></i>
+            <button onclick="toggleSettings()" class="w-[68px] glass-ui rounded-[20px] flex items-center justify-center text-slate-400 active:scale-90 transition-transform">
+                <i data-lucide="settings-2" class="w-6 h-6"></i>
             </button>
         </div>
 
-        <!-- State: Connected -->
+        <!-- Connected -->
         <div id="strava-connected" class="hidden w-full h-full flex gap-3">
-            <button id="sync-btn" onclick="fetchLatestStravaActivity()" class="w-[68px] glass-ui rounded-[22px] flex items-center justify-center">
+            <button id="sync-btn" onclick="fetchLatestStravaActivity()" class="w-[68px] glass-ui rounded-[20px] flex items-center justify-center active:scale-90 transition-transform">
                 <i data-lucide="refresh-cw" id="sync-icon" class="w-6 h-6 text-indigo-400"></i>
             </button>
-            <button id="flyover-btn" onclick="toggleFlyover()" class="flex-1 bg-indigo-600 rounded-[22px] flex items-center justify-center gap-3 font-black text-xs uppercase tracking-[0.15em] text-white shadow-xl shadow-indigo-600/20">
-                <i data-lucide="rocket" class="w-5 h-5 fill-current"></i> <span id="fly-text">Launch Cinema</span>
+            <button id="flyover-btn" onclick="toggleFlyover()" class="flex-1 bg-indigo-600 rounded-[20px] flex items-center justify-center gap-3 font-black text-xs uppercase tracking-[0.15em] text-white shadow-xl shadow-indigo-600/20">
+                <i data-lucide="play-circle" class="w-5 h-5 fill-current"></i> <span id="fly-text">Launch Cinema</span>
             </button>
         </div>
     </div>
 
-    <!-- Asset Drawer -->
-    <div id="asset-drawer" class="glass-ui p-8 overflow-hidden flex flex-col">
+    <!-- Drawer Panel -->
+    <div id="asset-drawer" class="glass-ui p-8 overflow-hidden flex flex-col shadow-[0_-20px_50px_rgba(0,0,0,0.6)]">
         <div onclick="toggleDrawer()" class="w-full"><div class="handle-bar"></div></div>
         
         <div class="flex-1 overflow-y-auto space-y-10 custom-scroll pt-2">
             <section>
                 <h3 class="text-[11px] font-black uppercase text-slate-500 tracking-[0.25em] mb-6 flex items-center gap-2">
-                    <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Performance
+                    <i data-lucide="trending-up" class="w-4 h-4"></i> Performance Data
                 </h3>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="p-6 bg-white/5 rounded-[28px] border border-white/5">
-                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-2">Distance</p>
+                    <div class="p-6 bg-white/5 rounded-[28px] border border-white/5 shadow-inner">
+                        <p class="text-[10px] text-slate-600 uppercase font-bold mb-2">Distance</p>
                         <p id="stat-dist" class="text-2xl font-black text-indigo-400">0.00 <span class="text-[10px] text-slate-700">KM</span></p>
                     </div>
-                    <div class="p-6 bg-white/5 rounded-[28px] border border-white/5">
-                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-2">Elevation</p>
+                    <div class="p-6 bg-white/5 rounded-[28px] border border-white/5 shadow-inner">
+                        <p class="text-[10px] text-slate-600 uppercase font-bold mb-2">Elevation</p>
                         <p id="stat-peak" class="text-2xl font-black text-emerald-400">0 <span class="text-[10px] text-slate-700">M</span></p>
                     </div>
                 </div>
@@ -160,21 +176,21 @@
 
             <section>
                 <h3 class="text-[11px] font-black uppercase text-slate-500 tracking-[0.25em] mb-6 flex items-center gap-2">
-                    <i data-lucide="folder-up" class="w-3.5 h-3.5"></i> Source Files
+                    <i data-lucide="folder-search" class="w-4 h-4"></i> Local Overlays
                 </h3>
                 <div class="flex gap-4">
-                    <button onclick="document.getElementById('gpx-input').click()" class="flex-1 py-5 bg-slate-800 rounded-3xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3">
-                        <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i> GPX
+                    <button onclick="document.getElementById('gpx-input').click()" class="flex-1 py-5 bg-slate-800/80 rounded-3xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3">
+                        <i data-lucide="file-up" class="w-4 h-4 text-indigo-400"></i> GPX
                     </button>
-                    <button onclick="document.getElementById('photo-input').click()" class="flex-1 py-5 bg-slate-800 rounded-3xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3">
-                        <i data-lucide="camera" class="w-4 h-4 text-purple-400"></i> Photos
+                    <button onclick="document.getElementById('photo-input').click()" class="flex-1 py-5 bg-slate-800/80 rounded-3xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3">
+                        <i data-lucide="image-plus" class="w-4 h-4 text-purple-400"></i> Photos
                     </button>
                 </div>
                 <input type="file" id="gpx-input" class="hidden" accept=".gpx">
                 <input type="file" id="photo-input" class="hidden" accept="image/*" multiple>
             </section>
 
-            <div id="photo-grid" class="grid grid-cols-3 gap-3 pb-24"></div>
+            <div id="photo-grid" class="grid grid-cols-3 gap-3 pb-32"></div>
         </div>
     </div>
 
@@ -182,26 +198,35 @@
     <div id="settings-overlay">
         <div class="bg-slate-900 border border-white/10 p-10 rounded-[3rem] w-full max-w-sm space-y-8 shadow-2xl">
             <div class="text-center">
-                <h3 class="text-2xl font-black tracking-tighter">APP KEYS</h3>
+                <h3 class="text-2xl font-black tracking-tighter text-white">DEVELOPER KEYS</h3>
                 <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">Strava API Configuration</p>
             </div>
             <div class="space-y-4">
-                <input type="text" id="input-client-id" class="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-indigo-500" placeholder="Client ID">
-                <input type="password" id="input-client-secret" class="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-indigo-500" placeholder="Client Secret">
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-slate-600 uppercase ml-2">Client ID</label>
+                    <input type="text" id="input-client-id" class="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-indigo-500" placeholder="212229">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] font-black text-slate-600 uppercase ml-2">Client Secret</label>
+                    <input type="password" id="input-client-secret" class="w-full bg-black/40 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-indigo-500" placeholder="••••••••">
+                </div>
             </div>
             <div class="flex flex-col gap-3">
-                <button onclick="saveApiSettings()" class="w-full py-5 bg-indigo-600 rounded-2xl font-black text-xs uppercase tracking-widest">Update Session</button>
-                <button onclick="toggleSettings()" class="w-full py-2 text-slate-600 text-[10px] font-bold uppercase">Back</button>
+                <button onclick="saveApiSettings()" class="w-full py-5 bg-indigo-600 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-600/20">Update Keys</button>
+                <button onclick="toggleSettings()" class="w-full py-2 text-slate-600 text-[10px] font-bold uppercase">Go Back</button>
             </div>
         </div>
     </div>
 
-    <div id="photo-overlay" onclick="this.classList.remove('active')" class="fixed inset-0 z-[2000] backdrop-blur-2xl hidden items-center justify-center p-6">
-        <img id="overlay-img" src="" alt="" class="rounded-[2rem] shadow-2xl border-2 border-white/10 max-h-[80vh] w-auto">
+    <div id="photo-overlay" onclick="this.style.display='none'" class="fixed inset-0 z-[5000] backdrop-blur-2xl hidden items-center justify-center p-6 transition-all">
+        <div class="relative flex flex-col items-center gap-6">
+            <img id="overlay-img" src="" alt="" class="rounded-[2rem] shadow-2xl border-4 border-white/10 max-h-[75vh] w-auto">
+            <div class="bg-indigo-600 px-10 py-3.5 rounded-full font-black text-[11px] uppercase tracking-[0.3em] shadow-2xl">Visual Capture</div>
+        </div>
     </div>
 
     <script>
-        // --- CONSTANTS ---
+        // --- DATA ---
         const CLIENT_ID_DEF = '212229';
         const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
@@ -209,7 +234,7 @@
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 230, movieCursorMarker = null;
 
-        // --- CORE UI ENGINE ---
+        // --- UI CORE ---
         function toggleDrawer() { document.getElementById('asset-drawer').classList.toggle('open'); }
         function toggleSettings() { 
             const keys = getKeys();
@@ -219,15 +244,10 @@
         }
         
         function updateStatus(msg) {
-            const pill = document.getElementById('status-pill');
-            const txt = document.getElementById('status-text');
-            txt.innerText = msg;
-            pill.style.opacity = '1';
-            pill.style.transform = 'translateY(0) scale(1)';
-            setTimeout(() => {
-                pill.style.opacity = '0';
-                pill.style.transform = 'translateY(-20px) scale(0.9)';
-            }, 3000);
+            const statusText = document.getElementById('engine-status');
+            statusText.innerText = msg;
+            statusText.classList.add('text-indigo-400');
+            setTimeout(() => statusText.classList.remove('text-indigo-400'), 2000);
         }
 
         function getKeys() {
@@ -245,7 +265,7 @@
             window.location.reload();
         }
 
-        // --- STRAVA CONNECTIVITY ---
+        // --- STRAVA BRIDGE ---
         function connectStrava() {
             const keys = getKeys();
             const currentUrl = window.location.href.split('?')[0].split('#')[0];
@@ -255,7 +275,7 @@
             
             const link = document.createElement('a');
             link.href = url;
-            link.target = '_top'; // Breakout from Canvas iframe
+            link.target = '_top'; 
             document.body.appendChild(link);
             link.click();
         }
@@ -268,7 +288,7 @@
                 return;
             }
             window.history.replaceState({}, document.title, window.location.pathname);
-            updateStatus("CONNECTING...");
+            updateStatus("AUTHENTICATING...");
             try {
                 const keys = getKeys();
                 const res = await fetch('https://www.strava.com/oauth/token', {
@@ -282,7 +302,7 @@
                     updateStravaUI(true);
                     fetchLatestStravaActivity();
                 }
-            } catch(e) { updateStatus("AUTH FAILED"); }
+            } catch(e) { updateStatus("AUTH ERROR"); }
         }
 
         function updateStravaUI(connected) {
@@ -299,7 +319,11 @@
             
             try {
                 const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { headers: { 'Authorization': `Bearer ${token}` } });
-                if(actsRes.status === 401) { localStorage.removeItem('strava_access_token'); updateStravaUI(false); return updateStatus("RE-LOGIN REQUIRED"); }
+                if(actsRes.status === 401) { 
+                    localStorage.removeItem('strava_access_token'); 
+                    updateStravaUI(false); 
+                    return updateStatus("RE-LOGIN REQUIRED"); 
+                }
                 
                 const activities = await actsRes.json();
                 if(!activities.length) return updateStatus("NO ACTIVITIES");
@@ -309,9 +333,9 @@
 
                 if(streams.latlng) {
                     processStreams(streams);
-                    updateStatus("PATH LOADED");
+                    updateStatus("PATH READY");
                 }
-            } catch(e) { updateStatus("SYNC ERROR"); }
+            } catch(e) { updateStatus("API ERROR"); }
             finally { icon.classList.remove('spinning'); }
         }
 
@@ -330,10 +354,10 @@
             document.getElementById('stat-dist').innerHTML = `${(total/1000).toFixed(2)} <span class="text-[10px] opacity-40">KM</span>`;
             document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-[10px] opacity-40">M</span>`;
             
-            setTimeout(() => zoomToTrack(), 800);
+            setTimeout(() => zoomToTrack(), 1000);
         }
 
-        // --- MAP ENGINE (SECURE BOOT) ---
+        // --- MAP CORE (SECURE BOOT) ---
         async function secureMapInit() {
             try {
                 const proxyLocation = { 
@@ -368,33 +392,30 @@
 
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-                map.addLayer({ id: 'route-glow', type: 'line', source: 'route', paint: { 'line-color': '#4f46e5', 'line-width': 14, 'line-opacity': 0.25 } });
+                map.addLayer({ id: 'route-glow', type: 'line', source: 'route', paint: { 'line-color': '#4f46e5', 'line-width': 16, 'line-opacity': 0.2 } });
                 map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#818cf8', 'line-width': 4 } });
                 map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
-                map.setTerrain({ source: 'terrain', exaggeration: 1.65 });
+                map.setTerrain({ source: 'terrain', exaggeration: 1.7 });
                 lucide.createIcons();
                 initApp();
             });
             window.addEventListener('resize', () => map.resize());
         }
 
-        // --- MOBILE-OPTIMIZED FIT VIEW ---
+        // --- ULTRA-STABLE FIT VIEW ---
         function zoomToTrack() {
             if(!currentTrackCoords.length || !map) return;
-            updateStatus("FOCUSING...");
+            updateStatus("FITTING VIEW...");
             
-            // Step 1: Force UI Sync
             map.resize();
-            
             const bounds = new window.maplibregl.LngLatBounds();
             currentTrackCoords.forEach(c => bounds.extend([c[0], c[1]]));
 
-            // Step 2: Smooth transition with specific mobile padding
             setTimeout(() => {
                 map.resize();
                 try {
                     map.fitBounds(bounds, { 
-                        padding: {top: 120, bottom: 200, left: 40, right: 40}, 
+                        padding: {top: 100, bottom: 180, left: 40, right: 40}, 
                         pitch: 45, 
                         duration: 2500, 
                         essential: true 
@@ -402,7 +423,7 @@
                 } catch(e) {
                     map.flyTo({ center: [currentTrackCoords[0][0], currentTrackCoords[0][1]], zoom: 15, duration: 2000 });
                 }
-            }, 200);
+            }, 300);
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -420,10 +441,10 @@
             lucide.createIcons();
         }
 
-        // Cinematic Cycle
+        // Cinematic 
         function toggleFlyover() { isFlyoverActive ? stopFlyover() : startFlyover(); }
         function startFlyover() {
-            if(!currentTrackCoords.length) return updateStatus("NO TRACK");
+            if(!currentTrackCoords.length) return updateStatus("NO DATA");
             isFlyoverActive = true; flyoverCurrentDist = 0; lastTimestamp = performance.now();
             document.getElementById('fly-text').innerText = "Abort Mission";
             const el = document.createElement('div'); el.className = 'movie-cursor';
