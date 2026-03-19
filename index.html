@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Run3D Path - Strava Cinematic V8.4</title>
+    <title>Run3D Path - Strava Cinematic V8.5</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -36,7 +36,7 @@
             box-shadow: 10px 0 30px rgba(0,0,0,0.5);
             display: flex; align-items: center; justify-content: center;
             transition: background 0.2s ease;
-            min-width: 48px; min-height: 54px; /* Enhanced touch target */
+            min-width: 50px; min-height: 60px; /* Large touch target */
         }
         #sidebar-tab:hover { background: #6366f1; }
 
@@ -62,7 +62,8 @@
             transition: all 0.2s ease; border: 1px solid transparent;
             cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
         }
-        .btn-control:active { transform: scale(0.95); background-color: rgba(99, 102, 241, 0.2); }
+        /* Touch feedback */
+        .btn-control:active { transform: scale(0.92); background-color: rgba(255, 255, 255, 0.1); }
         .btn-control:disabled { opacity: 0.3; cursor: not-allowed; }
 
         .sign-marker {
@@ -176,7 +177,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-black text-white tracking-tighter">Run3D</h1>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">V8.4 Ultra Sync</p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">V8.5 Ultra Sync</p>
                 </div>
             </div>
             <button onclick="toggleSettings()" class="p-2.5 bg-slate-900 rounded-xl text-slate-600 hover:text-indigo-400 border border-slate-800 transition-colors">
@@ -193,6 +194,7 @@
                 </div>
                 <div class="space-y-4 px-2">
                     <div id="strava-unconnected" class="space-y-4">
+                        <!-- Step 1 Card -->
                         <div id="api-status-card" onclick="toggleSettings()" class="p-4 rounded-2xl border bg-slate-900/50 border-slate-800 cursor-pointer transition-all hover:bg-slate-800/50">
                             <div class="flex items-center gap-3">
                                 <div id="api-status-icon" class="w-8 h-8 rounded-full flex items-center justify-center bg-slate-950">
@@ -205,6 +207,7 @@
                             </div>
                         </div>
 
+                        <!-- Step 2 Button -->
                         <button onclick="connectStrava()" id="btn-actual-connect" class="btn-control btn-strava shadow-xl disabled:opacity-20 group transition-all" disabled>
                             <i data-lucide="log-in" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
                             <span id="btn-connect-text">STEP 2: LOGIN TO STRAVA</span>
@@ -259,7 +262,7 @@
         <div id="map">
             <div id="map-loader" class="flex flex-col items-center justify-center h-full gap-5 bg-slate-950">
                 <div class="w-20 h-20 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                <p class="text-indigo-400 text-[11px] font-black uppercase tracking-[0.3em]">CONNECTING GRID...</p>
+                <p class="text-indigo-400 text-[11px] font-black uppercase tracking-[0.3em]">WAKING UP CORE...</p>
             </div>
         </div>
         
@@ -312,7 +315,7 @@
             } else {
                 card.className = 'p-4 rounded-2xl border border-slate-800 bg-slate-900/50 transition-all cursor-pointer hover:bg-slate-800 pulse-border';
                 icon.innerHTML = '<i data-lucide="alert-circle" class="text-indigo-400 w-5 h-5"></i>';
-                text.innerHTML = 'Step 1: <span class="text-white font-bold text-[10px] uppercase tracking-tight">Configure API</span>';
+                text.innerHTML = 'Step 1: <span class="text-white font-bold text-[10px] uppercase tracking-tight">Setup API Keys</span>';
                 connectBtn.disabled = true;
                 connectBtn.classList.add('opacity-20');
             }
@@ -449,8 +452,8 @@
             addSign(currentTrackCoords[maxEleIdx], '#a855f7', 'mountain');
             document.getElementById('camera-controls').classList.remove('hidden'); 
             
-            // Auto fit after sync
-            setTimeout(() => zoomToTrack(), 500);
+            // Auto fit after sync with extra delay for source propagation
+            setTimeout(() => zoomToTrack(), 600);
         }
 
         // --- MAP ENGINE ---
@@ -605,41 +608,47 @@
             setTimeout(() => { if(map) { map.resize(); } }, 450);
         }
 
-        // --- ENHANCED FIT VIEW LOGIC ---
+        // --- ULTRA-ROBUST FIT VIEW LOGIC ---
         function zoomToTrack() { 
             if (!currentTrackCoords.length || !map) return showAlert("NO TRACK LOADED"); 
             
-            showAlert("FITTING VIEW..."); 
+            showAlert("TARGETING PATH..."); 
 
-            // 1. Force container resize calculation
+            // 1. Force multiple resizes to be absolutely sure container is recognized
             map.resize();
-
-            // 2. Build Bounds object
+            
             const bounds = new window.maplibregl.LngLatBounds();
             currentTrackCoords.forEach(c => bounds.extend([c[0], c[1]]));
 
             if (bounds.isEmpty()) return;
 
-            // 3. Responsive Padding
+            // 2. Responsive Padding calculation
             const isMobile = window.innerWidth < 768;
-            const pad = isMobile ? 35 : 80;
+            const pad = isMobile ? 30 : 100;
 
-            // 4. Exec with forced layout cycle
+            // 3. Execution after DOM settling delay
             setTimeout(() => {
+                map.resize(); // Second resize right before movement
+                
                 try {
+                    // Try fitBounds first
                     map.fitBounds(bounds, { 
                         padding: pad, 
                         pitch: 45, 
-                        duration: 2500,
-                        essential: true,
-                        linear: false
+                        duration: 3000, // Longer duration for smoother visual confirmation
+                        essential: true
                     }); 
                 } catch (e) {
-                    console.error("FitBounds failed:", e);
-                    // Fallback to flyTo center
-                    map.flyTo({ center: [currentTrackCoords[0][0], currentTrackCoords[0][1]], zoom: 14 });
+                    console.error("Bounds calculation failed, falling back to center-zoom.");
+                    // Emergency fallback: flyTo the first coordinate
+                    map.flyTo({ 
+                        center: [currentTrackCoords[0][0], currentTrackCoords[0][1]], 
+                        zoom: 14,
+                        pitch: 45,
+                        essential: true
+                    });
                 }
-            }, 100);
+            }, 300);
         }
 
         function resetCamera() { stopFlyover(); map.easeTo({ center: currentTrackCoords.length ? [currentTrackCoords[0][0], currentTrackCoords[0][1]] : [0,0], bearing: 0, pitch: 0, duration: 1500 }); }
