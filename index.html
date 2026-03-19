@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Run3D Path - Strava Cinematic V7.9</title>
+    <title>Run3D Path - Strava Cinematic V8.0</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -176,7 +176,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-black text-white tracking-tighter">Run3D</h1>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">V7.9 Turbo</p>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">V8.0 Turbo</p>
                 </div>
             </div>
             <button onclick="toggleSettings()" class="p-2.5 bg-slate-900 rounded-xl text-slate-600 hover:text-indigo-400 border border-slate-800 transition-colors">
@@ -283,7 +283,6 @@
         // --- API HELPERS & HARDCODED CREDENTIALS ---
         function getKeys() {
             try {
-                // If keys are not in localStorage, use your provided hardcoded values
                 const id = localStorage.getItem('strava_api_id') || '212229';
                 const secret = localStorage.getItem('strava_api_secret') || '68086f28b4970e5856fd8f8d32a7b51df738174d';
                 return { id, secret };
@@ -351,23 +350,16 @@
         function connectStrava() {
             const keys = getKeys();
             if (!keys.id) { toggleSettings(); return; }
-
-            // CONSTRUCTION
-            // In your case: https://dimaklit.github.io/Run3DPath/
             const redirectUri = window.location.href.split('?')[0].split('#')[0];
             const scope = 'activity:read_all';
             const authUrl = `https://www.strava.com/oauth/authorize?client_id=${keys.id}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`;
-            
             showAlert("REDIRECTING TO STRAVA...");
-
             try {
                 window.open(authUrl, '_top');
             } catch (e) {
                 const link = document.createElement('a');
-                link.href = authUrl;
-                link.target = '_top';
-                document.body.appendChild(link);
-                link.click();
+                link.href = authUrl; link.target = '_top';
+                document.body.appendChild(link); link.click();
             }
         }
 
@@ -400,23 +392,60 @@
             document.getElementById('strava-connected').classList.toggle('hidden', !isConnected);
         }
 
+        // --- ENHANCED SYNC LOGIC ---
         async function fetchLatestStravaActivity() {
             const token = localStorage.getItem('strava_access_token');
-            if (!token) return;
+            if (!token) return showAlert("PLEASE LOGIN FIRST");
+
             const syncIcon = document.getElementById('sync-icon');
-            syncIcon.classList.add('animate-spin');
-            showAlert("DOWNLOADING LATEST RUN...");
+            if(syncIcon) syncIcon.classList.add('animate-spin');
+            showAlert("ACCESSING STRAVA API...");
+
             try {
-                const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { headers: { 'Authorization': `Bearer ${token}` } });
+                const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                });
+
+                // Handle token expiration (401)
+                if (actsRes.status === 401) {
+                    localStorage.removeItem('strava_access_token');
+                    updateStravaUI(false);
+                    showAlert("SESSION EXPIRED. RE-CONNECT STRAVA.");
+                    return;
+                }
+
+                if (!actsRes.ok) throw new Error("Strava API Unreachable");
+
                 const activities = await actsRes.json();
-                if (!activities.length) return showAlert("NO ACTIVITIES FOUND");
-                const streamsRes = await fetch(`https://www.strava.com/api/v3/activities/${activities[0].id}/streams?keys=latlng,altitude&key_by_type=true`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!Array.isArray(activities) || activities.length === 0) {
+                    showAlert("NO ACTIVITIES FOUND IN ACCOUNT");
+                    return;
+                }
+
+                const streamsRes = await fetch(`https://www.strava.com/api/v3/activities/${activities[0].id}/streams?keys=latlng,altitude&key_by_type=true`, { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                });
+
+                if (!streamsRes.ok) throw new Error("GPS Stream Download Failed");
+
                 const streams = await streamsRes.json();
-                if (streams.latlng) { processStravaStreams(streams); showAlert("SYNC COMPLETE!"); } else showAlert("NO GPS DATA");
-            } catch (e) { showAlert("SYNC ERROR"); } finally { syncIcon.classList.remove('animate-spin'); }
+                if (streams.latlng) { 
+                    processStravaStreams(streams); 
+                    showAlert("PATH SYNCED SUCCESSFULLY!"); 
+                } else {
+                    showAlert("LAST ACTIVITY HAS NO GPS DATA");
+                }
+            } catch (e) { 
+                console.error(e);
+                showAlert("SYNC FAILED. CHECK CONNECTION."); 
+            } finally { 
+                if(syncIcon) syncIcon.classList.remove('animate-spin'); 
+            }
         }
 
         function processStravaStreams(streams) {
+            if (!map || !map.getSource('route')) return showAlert("MAP ENGINE NOT READY");
+            
             const latlngs = streams.latlng.data, altitudes = streams.altitude ? streams.altitude.data : new Array(latlngs.length).fill(0);
             waypointMarkers.forEach(m => m.remove()); waypointMarkers = [];
             let total = 0, maxEle = -Infinity, maxEleIdx = 0;
@@ -537,7 +566,6 @@
         });
 
         document.getElementById('photo-input').addEventListener('change', async (e) => {
-            const list = document.getElementById('photo-list');
             for (const file of e.target.files) {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
