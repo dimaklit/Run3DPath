@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V9.9 Ultra Pro</title>
+    <title>Run3D Mobile - V10.1 Cinematic Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -35,7 +35,7 @@
             padding: 0 20px; z-index: 99999;
         }
 
-        /* HUD Buttons (Right Side) */
+        /* HUD Buttons */
         #hud-controls {
             position: fixed; right: 16px; bottom: 150px;
             display: flex; flex-direction: column; gap: 16px; z-index: 99999;
@@ -52,7 +52,7 @@
         }
         .hud-btn:active { transform: scale(0.85); background: var(--accent); }
 
-        /* Dock - Always visible settings */
+        /* Dock */
         #main-dock {
             position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); 
             left: 16px; right: 16px; height: 96px; 
@@ -65,13 +65,34 @@
             align-items: center; justify-content: center; transition: all 0.2s;
             -webkit-tap-highlight-color: transparent;
         }
-
         .strava-btn { background: var(--strava); color: white; font-weight: 900; }
         .cinema-btn { background: var(--accent); color: white; font-weight: 900; }
         .settings-btn { background: rgba(255,255,255,0.05); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); width: 70px; }
         .sync-btn-small { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.2); width: 70px; }
 
-        .dock-btn:active { transform: scale(0.95); filter: brightness(1.2); }
+        /* Waypoint Marker Graphics */
+        .waypoint-container {
+            display: flex; flex-direction: column; align-items: center;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 0 15px rgba(0,0,0,0.5));
+        }
+        .waypoint-container.popup { transform: scale(2.2); z-index: 1000; }
+        
+        .waypoint-icon {
+            width: 44px; height: 44px; border-radius: 14px; border: 3px solid white;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2); position: relative;
+        }
+        .waypoint-icon::after {
+            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+            border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid white;
+        }
+        .waypoint-label {
+            margin-top: 12px; padding: 4px 10px; border-radius: 8px;
+            background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.2);
+            color: white; font-size: 8px; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 0.1em; white-space: nowrap; backdrop-filter: blur(5px);
+        }
 
         /* Drawer */
         #asset-drawer {
@@ -96,7 +117,7 @@
             z-index: 200000; display: none; align-items: center; justify-content: center; padding: 30px;
         }
         #settings-overlay.active { display: flex; }
-
+        
         .custom-scroll::-webkit-scrollbar { width: 0px; }
     </style>
 </head>
@@ -104,17 +125,17 @@
 
     <div id="map"></div>
 
-    <!-- Redesigned Header -->
+    <!-- Header -->
     <header id="top-header" class="glass-ui">
         <div class="flex items-center gap-4">
-            <div class="bg-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-600/40">
+            <div class="bg-indigo-600 p-2.5 rounded-2xl shadow-lg">
                 <i data-lucide="mountain" class="w-6 h-6 text-white"></i>
             </div>
             <div>
                 <h1 class="text-lg font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    Run3D Path <span class="bg-indigo-500/30 border border-indigo-400/50 text-[10px] px-2.5 py-0.5 rounded-full text-indigo-200">v9.9</span>
+                    Run3D Path <span class="bg-indigo-500/30 border border-indigo-400/50 text-[10px] px-2.5 py-0.5 rounded-full text-indigo-200">v10.1</span>
                 </h1>
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">ULTRA MOBILE ENGINE</p>
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">CINEMATIC PRO ENGINE</p>
             </div>
         </div>
         <div class="flex items-center gap-2 bg-black/50 px-4 py-2.5 rounded-full border border-white/10">
@@ -123,7 +144,7 @@
         </div>
     </header>
 
-    <!-- Side Map HUD Controls -->
+    <!-- Map Controls -->
     <div id="hud-controls">
         <button onclick="zoomToTrack()" class="hud-btn" id="mobile-fit-btn" title="Fit View">
             <i data-lucide="zoom-in" class="w-8 h-8"></i>
@@ -139,10 +160,8 @@
         </button>
     </div>
 
-    <!-- Main Command Dock (Exclusive states with permanent Gear button) -->
+    <!-- Bottom Command Dock -->
     <div id="main-dock" class="glass-ui">
-        
-        <!-- Action Button (Connect OR Cinema) -->
         <button id="btn-strava-connect" onclick="connectStrava()" class="dock-btn strava-btn flex-1 gap-3 uppercase text-[11px] tracking-widest">
             <i data-lucide="link-2" class="w-5 h-5"></i> Connect Strava
         </button>
@@ -151,21 +170,18 @@
             <i data-lucide="play-circle" class="w-6 h-6 fill-current"></i> <span id="fly-text">TURBO CINEMA</span>
         </button>
 
-        <!-- Dynamic Sync Button (Appears when connected) -->
         <button id="sync-btn-small" onclick="fetchLatestStravaActivity()" class="dock-btn sync-btn-small" style="display: none;">
             <i data-lucide="refresh-cw" id="sync-icon" class="w-7 h-7"></i>
         </button>
 
-        <!-- Permanent Settings Button (ALWAYS HERE) -->
         <button onclick="toggleSettings()" class="dock-btn settings-btn" title="Settings">
             <i data-lucide="settings-2" class="w-7 h-7"></i>
         </button>
     </div>
 
-    <!-- Data & Files Drawer -->
+    <!-- Asset Drawer -->
     <div id="asset-drawer" class="glass-ui p-8 overflow-hidden flex flex-col shadow-[0_-40px_80px_rgba(0,0,0,1)]">
         <div onclick="toggleDrawer()" class="w-full"><div class="handle-bar"></div></div>
-        
         <div class="flex-1 overflow-y-auto space-y-12 custom-scroll pt-4">
             <section>
                 <div class="flex items-center justify-between mb-8">
@@ -183,7 +199,6 @@
                     </div>
                 </div>
             </section>
-
             <section>
                 <h3 class="text-[13px] font-black uppercase text-slate-400 tracking-[0.4em] mb-8">Import Center</h3>
                 <div class="flex gap-6">
@@ -197,32 +212,21 @@
                 <input type="file" id="gpx-input" class="hidden" accept=".gpx">
                 <input type="file" id="photo-input" class="hidden" accept="image/*" multiple>
             </section>
-
             <div id="photo-grid" class="grid grid-cols-3 gap-5 pb-48"></div>
         </div>
     </div>
 
-    <!-- Settings Modal (Where Logout lives) -->
+    <!-- Settings Overlay -->
     <div id="settings-overlay">
         <div class="glass-ui p-12 rounded-[4rem] w-full max-w-sm space-y-10 border-indigo-500/20 border-2">
-            <div class="text-center space-y-3">
-                <h3 class="text-3xl font-black tracking-tighter text-white">SYSTEM KEYS</h3>
-                <p class="text-[11px] text-slate-500 font-bold uppercase tracking-[0.2em]">Strava Integration</p>
-            </div>
+            <h3 class="text-3xl font-black tracking-tighter text-white text-center">SYSTEM KEYS</h3>
             <div class="space-y-6">
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-600 uppercase ml-4">Client ID</label>
-                    <input type="text" id="input-client-id" class="w-full bg-black/80 border border-white/10 rounded-[24px] px-6 py-6 text-sm outline-none focus:border-indigo-500 transition-colors" placeholder="212229">
-                </div>
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-600 uppercase ml-4">Client Secret</label>
-                    <input type="password" id="input-client-secret" class="w-full bg-black/80 border border-white/10 rounded-[24px] px-6 py-6 text-sm outline-none focus:border-indigo-500 transition-colors" placeholder="••••••••">
-                </div>
+                <input type="text" id="input-client-id" class="w-full bg-black/80 border border-white/10 rounded-[24px] px-6 py-6 text-sm outline-none focus:border-indigo-500" placeholder="Client ID">
+                <input type="password" id="input-client-secret" class="w-full bg-black/80 border border-white/10 rounded-[24px] px-6 py-6 text-sm outline-none focus:border-indigo-500" placeholder="Client Secret">
             </div>
             <div class="flex flex-col gap-4">
                 <button onclick="saveApiSettings()" class="w-full py-6 bg-indigo-600 rounded-[24px] font-black text-xs uppercase tracking-widest shadow-2xl">Update Core</button>
-                <!-- Logout Command (Visible only when token exists) -->
-                <button id="logout-btn" onclick="disconnectStrava()" class="w-full py-4 bg-red-500/10 border border-red-500/30 text-red-500 rounded-[20px] font-black text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all">Logout from Strava</button>
+                <button id="logout-btn" onclick="disconnectStrava()" class="w-full py-4 bg-red-500/10 border border-red-500/30 text-red-500 rounded-[20px] font-black text-[10px] uppercase">Logout from Strava</button>
                 <button onclick="toggleSettings()" class="w-full py-2 text-slate-500 text-[11px] font-black uppercase">Dismiss</button>
             </div>
         </div>
@@ -243,24 +247,20 @@
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 230, movieCursorMarker = null;
 
-        // UI Core
         function toggleDrawer() { document.getElementById('asset-drawer').classList.toggle('open'); }
         function toggleSettings() { 
             const keys = getKeys();
             document.getElementById('input-client-id').value = keys.id;
             document.getElementById('input-client-secret').value = keys.secret;
-            
-            // Check if we show logout
             const token = localStorage.getItem('strava_access_token');
             document.getElementById('logout-btn').style.display = token ? 'block' : 'none';
-            
             document.getElementById('settings-overlay').classList.toggle('active'); 
         }
         
         function updateStatus(msg) {
             const statusText = document.getElementById('engine-status');
             statusText.innerText = msg;
-            statusText.style.color = '#818cf8';
+            statusText.style.color = '#10b981';
             setTimeout(() => { statusText.style.color = ''; statusText.innerText = 'ONLINE'; }, 3000);
         }
 
@@ -279,12 +279,10 @@
             window.location.reload();
         }
 
-        // Strava Logic (EXCLUSIVE DOCK MANAGEMENT)
         function updateStravaUI(connected) {
             const connectBtn = document.getElementById('btn-strava-connect');
             const cinemaBtn = document.getElementById('flyover-btn');
             const syncBtn = document.getElementById('sync-btn-small');
-            
             if (connected) {
                 connectBtn.style.display = 'none';
                 cinemaBtn.style.display = 'flex';
@@ -300,7 +298,7 @@
             const keys = getKeys();
             const currentUrl = window.location.href.split('?')[0].split('#')[0];
             const url = `https://www.strava.com/oauth/authorize?client_id=${keys.id}&redirect_uri=${encodeURIComponent(currentUrl)}&response_type=code&scope=activity:read_all`;
-            updateStatus("AUTH REDIRECT...");
+            updateStatus("REDIRECTING...");
             const link = document.createElement('a');
             link.href = url; link.target = '_top'; 
             document.body.appendChild(link); link.click();
@@ -320,7 +318,7 @@
                 return;
             }
             window.history.replaceState({}, document.title, window.location.pathname);
-            updateStatus("VERIFYING...");
+            updateStatus("AUTH...");
             try {
                 const keys = getKeys();
                 const res = await fetch('https://www.strava.com/oauth/token', {
@@ -345,11 +343,7 @@
             updateStatus("SYNCING...");
             try {
                 const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { headers: { 'Authorization': `Bearer ${token}` } });
-                if(actsRes.status === 401) { 
-                    localStorage.removeItem('strava_access_token'); 
-                    updateStravaUI(false); 
-                    return; 
-                }
+                if(actsRes.status === 401) { localStorage.removeItem('strava_access_token'); updateStravaUI(false); return; }
                 const activities = await actsRes.json();
                 if(!activities.length) return updateStatus("EMPTY");
                 const streamsRes = await fetch(`https://www.strava.com/api/v3/activities/${activities[0].id}/streams?keys=latlng,altitude&key_by_type=true`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -360,22 +354,25 @@
 
         function processStreams(streams) {
             const latlngs = streams.latlng.data, altitudes = streams.altitude ? streams.altitude.data : new Array(latlngs.length).fill(0);
-            waypointMarkers.forEach(m => m.remove()); waypointMarkers = [];
-            let total = 0, maxEle = -Infinity;
+            waypointMarkers.forEach(w => w.marker.remove()); waypointMarkers = [];
+            let total = 0, maxEle = -Infinity, maxEleIdx = 0;
             currentTrackCoords = latlngs.map((pt, i) => {
-                if(altitudes[i] > maxEle) maxEle = altitudes[i];
+                if(altitudes[i] > maxEle) { maxEle = altitudes[i]; maxEleIdx = i; }
                 if(i > 0) total += calculateDistance(latlngs[i-1][0], latlngs[i-1][1], pt[0], pt[1]);
                 return [pt[1], pt[0], altitudes[i], total];
             });
             map.getSource('route').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: currentTrackCoords.map(c => [c[0], c[1]]) } });
-            addSign(currentTrackCoords[0], '#10b981', 'flag');
-            addSign(currentTrackCoords[currentTrackCoords.length-1], '#ef4444', 'trophy');
+            
+            // Refined Waypoint Creation
+            addSign(currentTrackCoords[0], '#10b981', 'flag', 'START');
+            addSign(currentTrackCoords[currentTrackCoords.length-1], '#ef4444', 'trophy', 'FINISH');
+            addSign(currentTrackCoords[maxEleIdx], '#a855f7', 'mountain', 'PEAK');
+            
             document.getElementById('stat-dist').innerHTML = `${(total/1000).toFixed(2)} <span class="text-sm font-black opacity-30">KM</span>`;
             document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-sm font-black opacity-30">M</span>`;
             setTimeout(() => zoomToTrack(), 1200);
         }
 
-        // Map Engine Secure Proxy
         async function secureMapInit() {
             try {
                 const pLoc = { href: 'https://localhost/', protocol: 'https:', origin: 'https://localhost', host: 'localhost', hostname: 'localhost', pathname: '/', search: '', hash: '', toString: () => 'https://localhost/' };
@@ -395,8 +392,12 @@
             });
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-                map.addLayer({ id: 'route-glow', type: 'line', source: 'route', paint: { 'line-color': '#4f46e5', 'line-width': 22, 'line-opacity': 0.15 } });
-                map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#818cf8', 'line-width': 5 } });
+                map.addLayer({ id: 'route-glow', type: 'line', source: 'route', paint: { 
+                    'line-color': '#4f46e5', 'line-width': 35, 'line-opacity': 0.5, 'line-blur': 15
+                }});
+                map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 
+                    'line-color': '#818cf8', 'line-width': 12
+                }});
                 map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
                 map.setTerrain({ source: 'terrain', exaggeration: 1.8 });
                 lucide.createIcons();
@@ -407,38 +408,45 @@
 
         function zoomToTrack() {
             if(!currentTrackCoords.length || !map) return;
-            updateStatus("LOCKED ON");
             map.resize();
             const bounds = new window.maplibregl.LngLatBounds();
             currentTrackCoords.forEach(c => bounds.extend([c[0], c[1]]));
             setTimeout(() => {
                 map.resize();
                 try { map.fitBounds(bounds, { padding: {top: 130, bottom: 230, left: 60, right: 60}, pitch: 45, duration: 3000, essential: true }); } 
-                catch(e) { map.flyTo({ center: [currentTrackCoords[0][0], currentTrackCoords[0][1]], zoom: 16, duration: 2500 }); }
+                catch(e) { map.flyTo({ center: [currentTrackCoords[0][0], currentTrackCoords[0][1]], zoom: 15.5, duration: 2500 }); }
             }, 400);
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3, φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180, Δφ = (lat2-lat1)*Math.PI/180, Δλ = (lon2-lon1)*Math.PI/180;
-            return R * 2 * Math.atan2(Math.sqrt(Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2), Math.sqrt(1-(Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2)));
+            const R = 6371e3; const φ1 = lat1 * Math.PI/180; const φ2 = lat2 * Math.PI/180; const Δφ = (lat2-lat1)*Math.PI/180; const Δλ = (lon2-lon1)*Math.PI/180;
+            const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
         function resetCamera() { map.easeTo({ center: currentTrackCoords.length ? [currentTrackCoords[0][0], currentTrackCoords[0][1]] : [0,0], bearing: 0, pitch: 0, duration: 1500 }); }
         function togglePitch() { map.easeTo({ pitch: map.getPitch() > 10 ? 0 : 75, duration: 1000 }); }
-        function addSign(pt, color, icon) {
-            const el = document.createElement('div'); el.className = 'sign-marker w-10 h-10 rounded-full border-4 border-white shadow-xl flex items-center justify-center'; el.style.backgroundColor = color;
-            el.innerHTML = `<i data-lucide="${icon}" class="text-white w-5 h-5"></i>`;
-            waypointMarkers.push(new window.maplibregl.Marker({ element: el }).setLngLat([pt[0], pt[1]]).addTo(map));
+        
+        function addSign(pt, color, icon, label) {
+            const el = document.createElement('div');
+            el.className = 'waypoint-container';
+            el.innerHTML = `
+                <div class="waypoint-icon" style="background: ${color}">
+                    <i data-lucide="${icon}" class="text-white w-6 h-6"></i>
+                </div>
+                <div class="waypoint-label">${label}</div>
+            `;
+            const marker = new window.maplibregl.Marker({ element: el }).setLngLat([pt[0], pt[1]]).addTo(map);
+            waypointMarkers.push({ marker, element: el, coords: [pt[0], pt[1]] });
             lucide.createIcons();
         }
 
-        // Cinematic Loop
         function toggleFlyover() { isFlyoverActive ? stopFlyover() : startFlyover(); }
         function startFlyover() {
-            if(!currentTrackCoords.length) return updateStatus("NO DATA");
+            if(!currentTrackCoords.length) return;
             isFlyoverActive = true; flyoverCurrentDist = 0; lastTimestamp = performance.now();
             document.getElementById('fly-text').innerText = "STOP MISSION";
-            const el = document.createElement('div'); el.className = 'w-6 h-6 bg-indigo-500 border-4 border-white rounded-full shadow-[0_0_20px_#6366f1]';
+            const el = document.createElement('div'); el.className = 'w-7 h-7 bg-indigo-500 border-4 border-white rounded-full shadow-[0_0_25px_#6366f1]';
             movieCursorMarker = new window.maplibregl.Marker({ element: el }).setLngLat([currentTrackCoords[0][0], currentTrackCoords[0][1]]).addTo(map);
             flyoverRequestId = requestAnimationFrame(flyoverLoop);
         }
@@ -446,19 +454,33 @@
             isFlyoverActive = false; cancelAnimationFrame(flyoverRequestId);
             if(movieCursorMarker) { movieCursorMarker.remove(); movieCursorMarker = null; }
             document.getElementById('fly-text').innerText = "TURBO CINEMA";
+            waypointMarkers.forEach(w => w.element.classList.remove('popup'));
         }
+        
         function flyoverLoop(timestamp) {
             if(!isFlyoverActive || !map) return;
             const delta = (timestamp - lastTimestamp) / 1000; lastTimestamp = timestamp;
             flyoverCurrentDist += flyoverBaseSpeed * delta;
-            if(flyoverCurrentDist >= currentTrackCoords[currentTrackCoords.length-1][3]) return stopFlyover();
+            
+            const totalD = currentTrackCoords[currentTrackCoords.length-1][3];
+            if(flyoverCurrentDist >= totalD) return stopFlyover();
+            
             const pos = getPointAtDist(flyoverCurrentDist);
-            const next = getPointAtDist(flyoverCurrentDist + 45);
+            const next = getPointAtDist(flyoverCurrentDist + 50);
+            
+            // Check for waypoint POPUP trigger
+            waypointMarkers.forEach(w => {
+                const dist = calculateDistance(pos[1], pos[0], w.coords[1], w.coords[0]);
+                if (dist < 65) w.element.classList.add('popup');
+                else if (dist > 150) w.element.classList.remove('popup');
+            });
+
             const bear = (Math.atan2(Math.sin((next[0]-pos[0])*Math.PI/180)*Math.cos(next[1]*Math.PI/180), Math.cos(pos[1]*Math.PI/180)*Math.sin(next[1]*Math.PI/180)-Math.sin(pos[1]*Math.PI/180)*Math.cos(next[1]*Math.PI/180)*Math.cos((next[0]-pos[0])*Math.PI/180))*180/Math.PI+360)%360;
             movieCursorMarker.setLngLat([pos[0], pos[1]]);
-            map.jumpTo({ center: [pos[0], pos[1]], bearing: bear, pitch: 75, zoom: 18.5 });
+            map.jumpTo({ center: [pos[0], pos[1]], bearing: bear, pitch: 65, zoom: 17.1 }); 
             flyoverRequestId = requestAnimationFrame(flyoverLoop);
         }
+
         function getPointAtDist(d) {
             for(let i=0; i<currentTrackCoords.length-1; i++) {
                 const p1 = currentTrackCoords[i], p2 = currentTrackCoords[i+1];
@@ -470,18 +492,19 @@
             return [currentTrackCoords[0][0], currentTrackCoords[0][1]];
         }
 
-        // File Handlers
         document.getElementById('gpx-input').addEventListener('change', (e) => {
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const xml = (new DOMParser()).parseFromString(ev.target.result, "text/xml");
                 const pts = Array.from(xml.getElementsByTagName("trkpt")).map(p => ({ lat: parseFloat(p.getAttribute("lat")), lon: parseFloat(p.getAttribute("lon")), ele: p.getElementsByTagName("ele")[0] ? parseFloat(p.getElementsByTagName("ele")[0].textContent) : 0 }));
-                if (!pts.length) return updateStatus("INVALID");
-                waypointMarkers.forEach(m => m.remove()); waypointMarkers = [];
-                let total = 0, maxEle = -Infinity;
-                currentTrackCoords = pts.map((p, i) => { if (p.ele > maxEle) maxEle = p.ele; if (i > 0) total += calculateDistance(pts[i-1].lat, pts[i-1].lon, p.lat, p.lon); return [p.lon, p.lat, p.ele, total]; });
+                if (!pts.length) return;
+                waypointMarkers.forEach(w => w.marker.remove()); waypointMarkers = [];
+                let total = 0, maxEle = -Infinity, maxEleIdx = 0;
+                currentTrackCoords = pts.map((p, i) => { if (p.ele > maxEle) { maxEle = p.ele; maxEleIdx = i; } if (i > 0) total += calculateDistance(pts[i-1].lat, pts[i-1].lon, p.lat, p.lon); return [p.lon, p.lat, p.ele, total]; });
                 map.getSource('route').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: currentTrackCoords.map(c => [c[0], c[1]]) } });
-                addSign(currentTrackCoords[0], '#10b981', 'flag'); addSign(currentTrackCoords[currentTrackCoords.length-1], '#ef4444', 'trophy');
+                addSign(currentTrackCoords[0], '#10b981', 'flag', 'START');
+                addSign(currentTrackCoords[currentTrackCoords.length-1], '#ef4444', 'trophy', 'FINISH');
+                addSign(currentTrackCoords[maxEleIdx], '#a855f7', 'mountain', 'PEAK');
                 document.getElementById('stat-dist').innerHTML = `${(total/1000).toFixed(2)} <span class="text-xs">KM</span>`;
                 document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-xs">M</span>`;
                 setTimeout(() => zoomToTrack(), 800);
@@ -499,7 +522,7 @@
                         if (lat && lon) {
                             const dLat = (lat[0] + lat[1]/60 + lat[2]/3600) * (EXIF.getTag(this, "GPSLatitudeRef") === "S" ? -1 : 1);
                             const dLon = (lon[0] + lon[1]/60 + lat[2]/3600) * (EXIF.getTag(this, "GPSLongitudeRef") === "W" ? -1 : 1);
-                            const el = document.createElement('div'); el.className = 'w-12 h-12 rounded-2xl border-4 border-white shadow-2xl bg-cover bg-center'; el.style.backgroundImage = `url(${ev.target.result})`;
+                            const el = document.createElement('div'); el.className = 'w-14 h-14 rounded-2xl border-4 border-white shadow-2xl bg-cover bg-center'; el.style.backgroundImage = `url(${ev.target.result})`;
                             el.onclick = () => { document.getElementById('overlay-img').src = ev.target.result; document.getElementById('photo-overlay').style.display = 'flex'; };
                             new window.maplibregl.Marker({ element: el }).setLngLat([dLon, dLat]).addTo(map);
                             const card = document.createElement('div'); card.className = 'aspect-square rounded-[30px] overflow-hidden border border-white/15 shadow-xl';
