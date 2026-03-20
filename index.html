@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V9.7 Ultra</title>
+    <title>Run3D Mobile - V9.8 Ultra</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -52,7 +52,7 @@
         }
         .hud-btn:active { transform: scale(0.85); background: var(--accent); }
 
-        /* Dock - Final overlap fix */
+        /* Dock */
         #main-dock {
             position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); 
             left: 16px; right: 16px; height: 96px; 
@@ -109,7 +109,7 @@
             </div>
             <div>
                 <h1 class="text-lg font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    Run3D Path <span class="bg-indigo-500/30 border border-indigo-400/50 text-[10px] px-2.5 py-0.5 rounded-full text-indigo-200">v9.7</span>
+                    Run3D Path <span class="bg-indigo-500/30 border border-indigo-400/50 text-[10px] px-2.5 py-0.5 rounded-full text-indigo-200">v9.8</span>
                 </h1>
                 <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">ULTRA MOBILE ENGINE</p>
             </div>
@@ -218,6 +218,8 @@
             </div>
             <div class="flex flex-col gap-4">
                 <button onclick="saveApiSettings()" class="w-full py-6 bg-indigo-600 rounded-[24px] font-black text-xs uppercase tracking-widest shadow-2xl">Update Core</button>
+                <!-- Logout Command -->
+                <button id="logout-btn" onclick="disconnectStrava()" class="w-full py-4 bg-red-500/20 border border-red-500/40 text-red-400 rounded-[20px] font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all" style="display: none;">Logout from Strava</button>
                 <button onclick="toggleSettings()" class="w-full py-2 text-slate-500 text-[11px] font-black uppercase">Dismiss</button>
             </div>
         </div>
@@ -273,13 +275,16 @@
         function updateStravaUI(connected) {
             const unconnected = document.getElementById('strava-unconnected');
             const connectedUI = document.getElementById('strava-connected');
+            const logoutBtn = document.getElementById('logout-btn');
             
             if (connected) {
                 unconnected.style.setProperty('display', 'none', 'important');
                 connectedUI.style.setProperty('display', 'flex', 'important');
+                if(logoutBtn) logoutBtn.style.display = 'block';
             } else {
                 unconnected.style.setProperty('display', 'flex', 'important');
                 connectedUI.style.setProperty('display', 'none', 'important');
+                if(logoutBtn) logoutBtn.style.display = 'none';
             }
         }
 
@@ -291,6 +296,13 @@
             const link = document.createElement('a');
             link.href = url; link.target = '_top'; 
             document.body.appendChild(link); link.click();
+        }
+
+        function disconnectStrava() {
+            localStorage.removeItem('strava_access_token');
+            updateStravaUI(false);
+            toggleSettings();
+            updateStatus("LOGGED OUT");
         }
 
         async function initAuth() {
