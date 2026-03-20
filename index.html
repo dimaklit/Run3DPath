@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V9.8 Ultra</title>
+    <title>Run3D Mobile - V9.9 Ultra Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -35,7 +35,7 @@
             padding: 0 20px; z-index: 99999;
         }
 
-        /* HUD Buttons */
+        /* HUD Buttons (Right Side) */
         #hud-controls {
             position: fixed; right: 16px; bottom: 150px;
             display: flex; flex-direction: column; gap: 16px; z-index: 99999;
@@ -52,23 +52,26 @@
         }
         .hud-btn:active { transform: scale(0.85); background: var(--accent); }
 
-        /* Dock */
+        /* Dock - Always visible settings */
         #main-dock {
             position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); 
             left: 16px; right: 16px; height: 96px; 
             border-radius: 34px; padding: 14px;
-            z-index: 99999; overflow: hidden;
+            z-index: 99999; display: flex; gap: 12px; align-items: center;
         }
 
-        .dock-container { width: 100%; height: 100%; display: flex; gap: 12px; }
-
-        .strava-btn {
-            background: var(--strava);
-            box-shadow: 0 8px 30px rgba(252, 76, 2, 0.5);
-            transition: all 0.2s;
+        .dock-btn {
+            height: 100%; border-radius: 24px; display: flex; 
+            align-items: center; justify-content: center; transition: all 0.2s;
             -webkit-tap-highlight-color: transparent;
         }
-        .strava-btn:active { transform: scale(0.95); filter: brightness(1.2); }
+
+        .strava-btn { background: var(--strava); color: white; font-weight: 900; }
+        .cinema-btn { background: var(--accent); color: white; font-weight: 900; }
+        .settings-btn { background: rgba(255,255,255,0.05); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); width: 70px; }
+        .sync-btn-small { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.2); width: 70px; }
+
+        .dock-btn:active { transform: scale(0.95); filter: brightness(1.2); }
 
         /* Drawer */
         #asset-drawer {
@@ -101,7 +104,7 @@
 
     <div id="map"></div>
 
-    <!-- Redesigned Header with clear versioning -->
+    <!-- Redesigned Header -->
     <header id="top-header" class="glass-ui">
         <div class="flex items-center gap-4">
             <div class="bg-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-600/40">
@@ -109,7 +112,7 @@
             </div>
             <div>
                 <h1 class="text-lg font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    Run3D Path <span class="bg-indigo-500/30 border border-indigo-400/50 text-[10px] px-2.5 py-0.5 rounded-full text-indigo-200">v9.8</span>
+                    Run3D Path <span class="bg-indigo-500/30 border border-indigo-400/50 text-[10px] px-2.5 py-0.5 rounded-full text-indigo-200">v9.9</span>
                 </h1>
                 <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">ULTRA MOBILE ENGINE</p>
             </div>
@@ -120,7 +123,7 @@
         </div>
     </header>
 
-    <!-- Essential HUD Commands -->
+    <!-- Side Map HUD Controls -->
     <div id="hud-controls">
         <button onclick="zoomToTrack()" class="hud-btn" id="mobile-fit-btn" title="Fit View">
             <i data-lucide="zoom-in" class="w-8 h-8"></i>
@@ -136,27 +139,27 @@
         </button>
     </div>
 
-    <!-- Main Command Dock (State Managed) -->
+    <!-- Main Command Dock (Exclusive states with permanent Gear button) -->
     <div id="main-dock" class="glass-ui">
-        <!-- Disconnected Interface -->
-        <div id="strava-unconnected" class="dock-container">
-            <button onclick="connectStrava()" class="flex-1 strava-btn rounded-[26px] flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest text-white">
-                <i data-lucide="link-2" class="w-6 h-6"></i> Connect Strava
-            </button>
-            <button onclick="toggleSettings()" class="w-[80px] glass-ui rounded-[26px] flex items-center justify-center text-slate-400 active:scale-90 transition-transform">
-                <i data-lucide="settings-2" class="w-8 h-8"></i>
-            </button>
-        </div>
+        
+        <!-- Action Button (Connect OR Cinema) -->
+        <button id="btn-strava-connect" onclick="connectStrava()" class="dock-btn strava-btn flex-1 gap-3 uppercase text-[11px] tracking-widest">
+            <i data-lucide="link-2" class="w-5 h-5"></i> Connect Strava
+        </button>
 
-        <!-- Connected Interface -->
-        <div id="strava-connected" class="dock-container" style="display: none;">
-            <button id="sync-btn" onclick="fetchLatestStravaActivity()" class="w-[80px] glass-ui rounded-[26px] flex items-center justify-center active:scale-90 transition-transform">
-                <i data-lucide="refresh-cw" id="sync-icon" class="w-8 h-8 text-indigo-400"></i>
-            </button>
-            <button id="flyover-btn" onclick="toggleFlyover()" class="flex-1 bg-indigo-600 rounded-[26px] flex items-center justify-center gap-3 font-black text-xs uppercase tracking-[0.2em] text-white shadow-2xl">
-                <i data-lucide="play-circle" class="w-7 h-7 fill-current"></i> <span id="fly-text">TURBO CINEMA</span>
-            </button>
-        </div>
+        <button id="flyover-btn" onclick="toggleFlyover()" class="dock-btn cinema-btn flex-1 gap-3 uppercase text-[11px] tracking-widest" style="display: none;">
+            <i data-lucide="play-circle" class="w-6 h-6 fill-current"></i> <span id="fly-text">TURBO CINEMA</span>
+        </button>
+
+        <!-- Dynamic Sync Button (Appears when connected) -->
+        <button id="sync-btn-small" onclick="fetchLatestStravaActivity()" class="dock-btn sync-btn-small" style="display: none;">
+            <i data-lucide="refresh-cw" id="sync-icon" class="w-7 h-7"></i>
+        </button>
+
+        <!-- Permanent Settings Button (ALWAYS HERE) -->
+        <button onclick="toggleSettings()" class="dock-btn settings-btn" title="Settings">
+            <i data-lucide="settings-2" class="w-7 h-7"></i>
+        </button>
     </div>
 
     <!-- Data & Files Drawer -->
@@ -199,7 +202,7 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
+    <!-- Settings Modal (Where Logout lives) -->
     <div id="settings-overlay">
         <div class="glass-ui p-12 rounded-[4rem] w-full max-w-sm space-y-10 border-indigo-500/20 border-2">
             <div class="text-center space-y-3">
@@ -218,8 +221,8 @@
             </div>
             <div class="flex flex-col gap-4">
                 <button onclick="saveApiSettings()" class="w-full py-6 bg-indigo-600 rounded-[24px] font-black text-xs uppercase tracking-widest shadow-2xl">Update Core</button>
-                <!-- Logout Command -->
-                <button id="logout-btn" onclick="disconnectStrava()" class="w-full py-4 bg-red-500/20 border border-red-500/40 text-red-400 rounded-[20px] font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all" style="display: none;">Logout from Strava</button>
+                <!-- Logout Command (Visible only when token exists) -->
+                <button id="logout-btn" onclick="disconnectStrava()" class="w-full py-4 bg-red-500/10 border border-red-500/30 text-red-500 rounded-[20px] font-black text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all">Logout from Strava</button>
                 <button onclick="toggleSettings()" class="w-full py-2 text-slate-500 text-[11px] font-black uppercase">Dismiss</button>
             </div>
         </div>
@@ -246,6 +249,11 @@
             const keys = getKeys();
             document.getElementById('input-client-id').value = keys.id;
             document.getElementById('input-client-secret').value = keys.secret;
+            
+            // Check if we show logout
+            const token = localStorage.getItem('strava_access_token');
+            document.getElementById('logout-btn').style.display = token ? 'block' : 'none';
+            
             document.getElementById('settings-overlay').classList.toggle('active'); 
         }
         
@@ -271,20 +279,20 @@
             window.location.reload();
         }
 
-        // Strava Logic (EXCLUSIVE STATES)
+        // Strava Logic (EXCLUSIVE DOCK MANAGEMENT)
         function updateStravaUI(connected) {
-            const unconnected = document.getElementById('strava-unconnected');
-            const connectedUI = document.getElementById('strava-connected');
-            const logoutBtn = document.getElementById('logout-btn');
+            const connectBtn = document.getElementById('btn-strava-connect');
+            const cinemaBtn = document.getElementById('flyover-btn');
+            const syncBtn = document.getElementById('sync-btn-small');
             
             if (connected) {
-                unconnected.style.setProperty('display', 'none', 'important');
-                connectedUI.style.setProperty('display', 'flex', 'important');
-                if(logoutBtn) logoutBtn.style.display = 'block';
+                connectBtn.style.display = 'none';
+                cinemaBtn.style.display = 'flex';
+                syncBtn.style.display = 'flex';
             } else {
-                unconnected.style.setProperty('display', 'flex', 'important');
-                connectedUI.style.setProperty('display', 'none', 'important');
-                if(logoutBtn) logoutBtn.style.display = 'none';
+                connectBtn.style.display = 'flex';
+                cinemaBtn.style.display = 'none';
+                syncBtn.style.display = 'none';
             }
         }
 
@@ -292,7 +300,7 @@
             const keys = getKeys();
             const currentUrl = window.location.href.split('?')[0].split('#')[0];
             const url = `https://www.strava.com/oauth/authorize?client_id=${keys.id}&redirect_uri=${encodeURIComponent(currentUrl)}&response_type=code&scope=activity:read_all`;
-            updateStatus("REDIRECTING...");
+            updateStatus("AUTH REDIRECT...");
             const link = document.createElement('a');
             link.href = url; link.target = '_top'; 
             document.body.appendChild(link); link.click();
@@ -312,7 +320,7 @@
                 return;
             }
             window.history.replaceState({}, document.title, window.location.pathname);
-            updateStatus("AUTH...");
+            updateStatus("VERIFYING...");
             try {
                 const keys = getKeys();
                 const res = await fetch('https://www.strava.com/oauth/token', {
@@ -337,7 +345,11 @@
             updateStatus("SYNCING...");
             try {
                 const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { headers: { 'Authorization': `Bearer ${token}` } });
-                if(actsRes.status === 401) { localStorage.removeItem('strava_access_token'); updateStravaUI(false); return; }
+                if(actsRes.status === 401) { 
+                    localStorage.removeItem('strava_access_token'); 
+                    updateStravaUI(false); 
+                    return; 
+                }
                 const activities = await actsRes.json();
                 if(!activities.length) return updateStatus("EMPTY");
                 const streamsRes = await fetch(`https://www.strava.com/api/v3/activities/${activities[0].id}/streams?keys=latlng,altitude&key_by_type=true`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -358,12 +370,12 @@
             map.getSource('route').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: currentTrackCoords.map(c => [c[0], c[1]]) } });
             addSign(currentTrackCoords[0], '#10b981', 'flag');
             addSign(currentTrackCoords[currentTrackCoords.length-1], '#ef4444', 'trophy');
-            document.getElementById('stat-dist').innerHTML = `${(total/1000).toFixed(2)} <span class="text-xs">KM</span>`;
-            document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-xs">M</span>`;
+            document.getElementById('stat-dist').innerHTML = `${(total/1000).toFixed(2)} <span class="text-sm font-black opacity-30">KM</span>`;
+            document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-sm font-black opacity-30">M</span>`;
             setTimeout(() => zoomToTrack(), 1200);
         }
 
-        // Map Lib Core (Secure Proxy)
+        // Map Engine Secure Proxy
         async function secureMapInit() {
             try {
                 const pLoc = { href: 'https://localhost/', protocol: 'https:', origin: 'https://localhost', host: 'localhost', hostname: 'localhost', pathname: '/', search: '', hash: '', toString: () => 'https://localhost/' };
@@ -388,13 +400,14 @@
                 map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
                 map.setTerrain({ source: 'terrain', exaggeration: 1.8 });
                 lucide.createIcons();
+                initAuth();
             });
             window.addEventListener('resize', () => map.resize());
         }
 
         function zoomToTrack() {
             if(!currentTrackCoords.length || !map) return;
-            updateStatus("LOCKED");
+            updateStatus("LOCKED ON");
             map.resize();
             const bounds = new window.maplibregl.LngLatBounds();
             currentTrackCoords.forEach(c => bounds.extend([c[0], c[1]]));
@@ -424,7 +437,7 @@
         function startFlyover() {
             if(!currentTrackCoords.length) return updateStatus("NO DATA");
             isFlyoverActive = true; flyoverCurrentDist = 0; lastTimestamp = performance.now();
-            document.getElementById('fly-text').innerText = "ABORT";
+            document.getElementById('fly-text').innerText = "STOP MISSION";
             const el = document.createElement('div'); el.className = 'w-6 h-6 bg-indigo-500 border-4 border-white rounded-full shadow-[0_0_20px_#6366f1]';
             movieCursorMarker = new window.maplibregl.Marker({ element: el }).setLngLat([currentTrackCoords[0][0], currentTrackCoords[0][1]]).addTo(map);
             flyoverRequestId = requestAnimationFrame(flyoverLoop);
@@ -499,7 +512,7 @@
             }
         });
 
-        window.onload = () => { secureMapInit(); initAuth(); };
+        window.onload = () => { secureMapInit(); };
     </script>
 </body>
 </html>
