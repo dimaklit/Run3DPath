@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V10.7 Precision Trace</title>
+    <title>Run3D Mobile - V10.8 Precision Trace</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -122,9 +122,9 @@
             </div>
             <div>
                 <h1 class="text-lg font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    Run3D Path <span class="bg-indigo-500/40 border border-white/20 text-[10px] px-2.5 py-0.5 rounded-full">v10.7</span>
+                    Run3D Path <span class="bg-indigo-500/40 border border-white/20 text-[10px] px-2.5 py-0.5 rounded-full">v10.8</span>
                 </h1>
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">PRECISION ENGINE</p>
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">PRECISION MOBILE ENGINE</p>
             </div>
         </div>
         <div class="flex items-center gap-2 bg-black/50 px-4 py-2.5 rounded-full border border-white/10">
@@ -134,17 +134,17 @@
     </header>
 
     <div id="hud-controls" class="ui-layer">
-        <button onclick="zoomToTrack()" class="hud-btn" id="mobile-fit-btn">
+        <button onclick="zoomToTrack()" class="hud-btn" id="mobile-fit-btn" title="Fit View">
             <i data-lucide="maximize" class="w-9 h-9"></i>
         </button>
-        <button onclick="togglePitch()" class="hud-btn">
+        <button onclick="togglePitch()" class="hud-btn" title="3D View">
             <i data-lucide="box" class="w-9 h-9"></i>
         </button>
-        <button onclick="resetCamera()" class="hud-btn">
+        <button onclick="resetCamera()" class="hud-btn" title="Reset North">
             <i data-lucide="compass" class="w-9 h-9"></i>
         </button>
-        <button onclick="toggleDrawer()" class="hud-btn border-indigo-500/50">
-            <i data-lucide="layers-2" class="w-9 h-9 text-indigo-400"></i>
+        <button onclick="toggleDrawer()" class="hud-btn border-indigo-500/50" title="GPX & Photos">
+            <i data-lucide="folder-open" class="w-9 h-9 text-indigo-400"></i>
         </button>
     </div>
 
@@ -329,31 +329,31 @@
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
                 
-                // --- V10.7 REFINED PRECISION TRACE ---
-                // Narrow Glow (Aura)
+                // --- V10.8 MOBILE-SCALED PRECISION TRACE ---
+                // Wide Glow (Aura) - Up-scaled for High-DPI
                 map.addLayer({ id: 'route-glow', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#4f46e5', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 15, 18, 45], 
-                        'line-opacity': 0.6, 'line-blur': 10
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 30, 12, 60, 18, 140], 
+                        'line-opacity': 0.6, 'line-blur': ['interpolate', ['linear'], ['zoom'], 10, 10, 18, 25]
                     }
                 });
-                // Neon Core
+                // Neon Core - Up-scaled for High-DPI
                 map.addLayer({ id: 'route-neon', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#6366f1', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 8, 18, 25],
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 15, 12, 35, 18, 65],
                         'line-opacity': 0.9
                     }
                 });
-                // Sharp White High-Intensity
+                // Solid White High-Intensity
                 map.addLayer({ id: 'route-white', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#ffffff', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 3, 18, 8],
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 8, 6, 12, 10, 18, 15],
                         'line-opacity': 1.0
                     }
                 });
