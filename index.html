@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V10.3 Hyper Vision</title>
+    <title>Run3D Mobile - V10.4 Hyper Trace</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -133,9 +133,9 @@
             </div>
             <div>
                 <h1 class="text-lg font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    Run3D Path <span class="bg-indigo-500/30 border border-indigo-400/50 text-[10px] px-2.5 py-0.5 rounded-full text-indigo-200">v10.3</span>
+                    Run3D Path <span class="bg-indigo-500/30 border border-indigo-400/50 text-[10px] px-2.5 py-0.5 rounded-full text-indigo-200">v10.4</span>
                 </h1>
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">ULTRA VISION ENGINE</p>
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">HYPER TRACE ENGINE</p>
             </div>
         </div>
         <div class="flex items-center gap-2 bg-black/50 px-4 py-2.5 rounded-full border border-white/10">
@@ -392,32 +392,32 @@
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
                 
-                // --- ULTRA BOLD HYPER-VISIBLE TRACE ---
-                // Outer Glow
+                // --- ULTRA BOLD HYPER-VISIBLE TRACE V10.4 ---
+                // Massive Outer Glow
                 map.addLayer({ id: 'route-glow', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#4f46e5', 
-                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 50, 18, 130], 
-                        'line-opacity': 0.7, 
-                        'line-blur': 25
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 60, 18, 150], 
+                        'line-opacity': 0.8, 
+                        'line-blur': 30
                     }
                 });
-                // Main Neon Body
+                // Saturated Neon Core
                 map.addLayer({ id: 'route-neon', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#6366f1', 
-                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 25, 18, 70],
-                        'line-opacity': 0.95
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 25, 18, 80],
+                        'line-opacity': 1.0
                     }
                 });
-                // High Intensity White Core
+                // Pure High-Intensity White Center
                 map.addLayer({ id: 'route-white', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#ffffff', 
-                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 10, 8, 18, 22],
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 10, 18, 28],
                         'line-opacity': 1.0
                     }
                 });
@@ -490,19 +490,19 @@
             if(flyoverCurrentDist >= totalD) return stopFlyover();
             
             const pos = getPointAtDist(flyoverCurrentDist);
-            const next = getPointAtDist(flyoverCurrentDist + 60); 
+            const next = getPointAtDist(flyoverCurrentDist + 80); 
             
             waypointMarkers.forEach(w => {
                 const dist = calculateDistance(pos[1], pos[0], w.coords[1], w.coords[0]);
-                if (dist < 80) w.element.classList.add('popup');
-                else if (dist > 180) w.element.classList.remove('popup');
+                if (dist < 100) w.element.classList.add('popup');
+                else if (dist > 250) w.element.classList.remove('popup');
             });
 
             const bear = (Math.atan2(Math.sin((next[0]-pos[0])*Math.PI/180)*Math.cos(next[1]*Math.PI/180), Math.cos(pos[1]*Math.PI/180)*Math.sin(next[1]*Math.PI/180)-Math.sin(pos[1]*Math.PI/180)*Math.cos(next[1]*Math.PI/180)*Math.cos((next[0]-pos[0])*Math.PI/180))*180/Math.PI+360)%360;
             movieCursorMarker.setLngLat([pos[0], pos[1]]);
             
-            // --- HIGHER CAMERA (ZOOM 15.8) & SMOOTHER ANGLE ---
-            map.jumpTo({ center: [pos[0], pos[1]], bearing: bear, pitch: 60, zoom: 15.8 }); 
+            // --- HIGHER CAMERA & CLEARER SATELLITE (ZOOM 15.5) ---
+            map.jumpTo({ center: [pos[0], pos[1]], bearing: bear, pitch: 55, zoom: 15.5 }); 
             flyoverRequestId = requestAnimationFrame(flyoverLoop);
         }
 
