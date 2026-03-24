@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V11.9 Clean Vision</title>
+    <title>Run3D Mobile - V12.0 Ultra Core</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -70,7 +70,6 @@
         .settings-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1.5px solid rgba(255,255,255,0.1); width: 72px; }
         .sync-btn-small { background: rgba(99, 102, 241, 0.2); color: #fff; border: 1.5px solid #818cf8; width: 72px; }
 
-        /* Clean Waypoints */
         .waypoint-container {
             display: flex; flex-direction: column; align-items: center;
             transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -123,7 +122,7 @@
             </div>
             <div>
                 <h1 class="text-lg font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    Run3D Path <span class="bg-indigo-500/40 border border-white/20 text-[10px] px-2.5 py-0.5 rounded-full">v11.9</span>
+                    Run3D Path <span class="bg-indigo-500/40 border border-white/20 text-[10px] px-2.5 py-0.5 rounded-full">v12.0</span>
                 </h1>
                 <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1" id="engine-status">IDLE</p>
             </div>
@@ -223,9 +222,9 @@
         const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
 
-        // Precision Scaling: Only slight adjustment for High-DPI to prevent "noisy shoulders"
+        // Balanced Scaling: Higher stability for core line visibility
         const DPR = window.devicePixelRatio || 1;
-        const MOBILE_FACTOR = DPR > 1.5 ? 1.25 : 1.0; 
+        const MOBILE_FACTOR = DPR > 1.5 ? 1.5 : 1.0; 
 
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 230, movieCursorMarker = null;
@@ -339,31 +338,32 @@
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
                 
-                // --- V11.9 PRECISION CLEAN TRACE ---
-                // Subtle Glow (No noise)
+                // --- V12.0 ULTRA CORE VISIBILITY FIX ---
+                // LAYER 1: Deep Background Glow (Still subtle but constant)
                 map.addLayer({ id: 'route-glow', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#4f46e5', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 12 * MOBILE_FACTOR, 12, 35 * MOBILE_FACTOR, 18, 90 * MOBILE_FACTOR], 
-                        'line-opacity': 0.35, 'line-blur': ['interpolate', ['linear'], ['zoom'], 10, 4, 18, 12]
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 12 * MOBILE_FACTOR, 12, 30 * MOBILE_FACTOR, 18, 80 * MOBILE_FACTOR], 
+                        'line-opacity': 0.3, 'line-blur': ['interpolate', ['linear'], ['zoom'], 10, 4, 18, 12]
                     }
                 });
-                // Saturated Main Body
+                // LAYER 2: High Saturated Neon
                 map.addLayer({ id: 'route-neon', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#6366f1', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 6 * MOBILE_FACTOR, 12, 14 * MOBILE_FACTOR, 18, 35 * MOBILE_FACTOR],
-                        'line-opacity': 0.95
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 8 * MOBILE_FACTOR, 12, 16 * MOBILE_FACTOR, 18, 40 * MOBILE_FACTOR],
+                        'line-opacity': 0.9
                     }
                 });
-                // Ultra Sharp White Core
+                // LAYER 3: ULTRA STABLE WHITE CORE (Guaranteed thickness at all zooms)
                 map.addLayer({ id: 'route-white', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#ffffff', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 2 * MOBILE_FACTOR, 12, 4 * MOBILE_FACTOR, 18, 10 * MOBILE_FACTOR],
+                        // INCREASED MINIMUM THICKNESS (from 2 to 6 pixels)
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 6 * MOBILE_FACTOR, 12, 10 * MOBILE_FACTOR, 18, 18 * MOBILE_FACTOR],
                         'line-opacity': 1.0
                     }
                 });
