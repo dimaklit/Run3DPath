@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V11.2 Power Engine</title>
+    <title>Run3D Mobile - V11.3 Precision Mobile</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -122,7 +122,7 @@
             </div>
             <div>
                 <h1 class="text-lg font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    Run3D Path <span class="bg-indigo-500/40 border border-white/20 text-[10px] px-2.5 py-0.5 rounded-full">v11.2</span>
+                    Run3D Path <span class="bg-indigo-500/40 border border-white/20 text-[10px] px-2.5 py-0.5 rounded-full">v11.3</span>
                 </h1>
                 <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1" id="engine-status">INITIALIZING...</p>
             </div>
@@ -143,7 +143,7 @@
         <button onclick="resetCamera()" class="hud-btn" title="Reset North">
             <i data-lucide="compass" class="w-9 h-9"></i>
         </button>
-        <button onclick="toggleDrawer()" class="hud-btn border-indigo-500/50" title="Add Files">
+        <button onclick="toggleDrawer()" class="hud-btn border-indigo-500/50" title="Import Files">
             <i data-lucide="plus-circle" class="w-9 h-9 text-indigo-400"></i>
         </button>
     </div>
@@ -222,9 +222,9 @@
         const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
 
-        // Global Scaling for High-DPI Mobile Devices
+        // Balanced Scaling for Mobile (Refined from extreme 4.0 to 1.8)
         const DPR = window.devicePixelRatio || 1;
-        const MOBILE_FACTOR = DPR > 1.5 ? 4.0 : 1.2; 
+        const MOBILE_FACTOR = DPR > 1.5 ? 1.8 : 1.1; 
 
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 230, movieCursorMarker = null;
@@ -248,7 +248,7 @@
             } else {
                 dot.className = "w-2 h-2 rounded-full bg-emerald-500";
                 pillText.innerText = "LIVE";
-                document.getElementById('engine-status').innerText = "POWER ENGINE";
+                document.getElementById('engine-status').innerText = "PRECISION ENGINE";
             }
         }
 
@@ -284,7 +284,7 @@
             const code = new URLSearchParams(window.location.search).get('code');
             if(!code) { updateStravaUI(!!localStorage.getItem('strava_access_token')); return; }
             window.history.replaceState({}, document.title, window.location.pathname);
-            updateUIMessage("AUTHENTICATING...");
+            updateUIMessage("CONNECTING...");
             try {
                 const keys = getKeys();
                 const res = await fetch('https://www.strava.com/oauth/token', {
@@ -305,7 +305,7 @@
             const token = localStorage.getItem('strava_access_token');
             if(!token) return;
             const icon = document.getElementById('sync-icon'); icon.classList.add('spinning');
-            updateUIMessage("FETCHING DATA...");
+            updateUIMessage("SYNCING...");
             try {
                 const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { headers: { 'Authorization': `Bearer ${token}` } });
                 const activities = await actsRes.json();
@@ -313,7 +313,7 @@
                 const streamsRes = await fetch(`https://www.strava.com/api/v3/activities/${activities[0].id}/streams?keys=latlng,altitude&key_by_type=true`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const streams = await streamsRes.json();
                 if(streams.latlng) processStreams(streams);
-            } catch(e) { updateUIMessage("STRAVA ERROR"); } finally { icon.classList.remove('spinning'); }
+            } catch(e) { updateUIMessage("API ERROR"); } finally { icon.classList.remove('spinning'); }
         }
 
         function processStreams(streams) {
@@ -359,20 +359,20 @@
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
                 
-                // --- V11.2 ULTRA BOLD DPR-OPTIMIZED TRACE ---
+                // --- V11.3 PRECISION TRACE SCALING (SLIMMER OREOL) ---
                 map.addLayer({ id: 'route-glow', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#4f46e5', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 35 * MOBILE_FACTOR, 10, 85 * MOBILE_FACTOR, 18, 450 * MOBILE_FACTOR], 
-                        'line-opacity': 0.65, 'line-blur': ['interpolate', ['linear'], ['zoom'], 10, 15, 18, 35]
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 15 * MOBILE_FACTOR, 10, 40 * MOBILE_FACTOR, 18, 140 * MOBILE_FACTOR], 
+                        'line-opacity': 0.5, 'line-blur': ['interpolate', ['linear'], ['zoom'], 10, 8, 18, 25]
                     }
                 });
                 map.addLayer({ id: 'route-neon', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#6366f1', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 20 * MOBILE_FACTOR, 10, 45 * MOBILE_FACTOR, 18, 160 * MOBILE_FACTOR],
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 8 * MOBILE_FACTOR, 10, 18 * MOBILE_FACTOR, 18, 60 * MOBILE_FACTOR],
                         'line-opacity': 1.0
                     }
                 });
@@ -380,7 +380,7 @@
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#ffffff', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 8 * MOBILE_FACTOR, 10, 15 * MOBILE_FACTOR, 18, 50 * MOBILE_FACTOR],
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 3 * MOBILE_FACTOR, 10, 6 * MOBILE_FACTOR, 18, 16 * MOBILE_FACTOR],
                         'line-opacity': 1.0
                     }
                 });
@@ -390,6 +390,7 @@
                 
                 updateUIMessage("READY", false);
                 lucide.createIcons();
+                initAuth();
             });
             window.addEventListener('resize', () => map.resize());
         }
@@ -461,10 +462,52 @@
             return [currentTrackCoords[0][0], currentTrackCoords[0][1]];
         }
 
+        document.getElementById('gpx-input').addEventListener('change', (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const xml = (new DOMParser()).parseFromString(ev.target.result, "text/xml");
+                const pts = Array.from(xml.getElementsByTagName("trkpt")).map(p => ({ lat: parseFloat(p.getAttribute("lat")), lon: parseFloat(p.getAttribute("lon")), ele: p.getElementsByTagName("ele")[0] ? parseFloat(p.getElementsByTagName("ele")[0].textContent) : 0 }));
+                if (!pts.length) return;
+                waypointMarkers.forEach(w => w.marker.remove()); waypointMarkers = [];
+                let total = 0, maxEle = -Infinity, maxEleIdx = 0;
+                currentTrackCoords = pts.map((p, i) => { if (p.ele > maxEle) { maxEle = p.ele; maxEleIdx = i; } if (i > 0) total += calculateDistance(pts[i-1].lat, pts[i-1].lon, p.lat, p.lon); return [p.lon, p.lat, p.ele, total]; });
+                map.getSource('route').setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: currentTrackCoords.map(c => [c[0], c[1]]) } });
+                addSign(currentTrackCoords[0], '#10b981', 'flag', 'START');
+                addSign(currentTrackCoords[currentTrackCoords.length-1], '#ef4444', 'trophy', 'FINISH');
+                addSign(currentTrackCoords[maxEleIdx], '#a855f7', 'mountain', 'PEAK');
+                document.getElementById('stat-dist').innerHTML = `${(total/1000).toFixed(2)} <span class="text-xs">KM</span>`;
+                document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-xs">M</span>`;
+                setTimeout(() => zoomToTrack(), 800);
+            };
+            reader.readAsText(e.target.files[0]);
+        });
+
+        document.getElementById('photo-input').addEventListener('change', async (e) => {
+            const grid = document.getElementById('photo-grid');
+            for (const file of e.target.files) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    EXIF.getData(file, function() {
+                        const lat = EXIF.getTag(this, "GPSLatitude"), lon = EXIF.getTag(this, "GPSLongitude");
+                        if (lat && lon) {
+                            const dLat = (lat[0] + lat[1]/60 + lat[2]/3600) * (EXIF.getTag(this, "GPSLatitudeRef") === "S" ? -1 : 1);
+                            const dLon = (lon[0] + lon[1]/60 + lat[2]/3600) * (EXIF.getTag(this, "GPSLongitudeRef") === "W" ? -1 : 1);
+                            const el = document.createElement('div'); el.className = 'w-14 h-14 rounded-2xl border-4 border-white shadow-2xl bg-cover bg-center'; el.style.backgroundImage = `url(${ev.target.result})`;
+                            el.onclick = () => { document.getElementById('overlay-img').src = ev.target.result; document.getElementById('photo-overlay').style.display = 'flex'; };
+                            new window.maplibregl.Marker({ element: el }).setLngLat([dLon, dLat]).addTo(map);
+                            const card = document.createElement('div'); card.className = 'aspect-square rounded-[30px] overflow-hidden border border-white/15 shadow-xl';
+                            card.innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
+                            grid.appendChild(card);
+                        }
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
         window.onload = () => { 
             lucide.createIcons(); 
             secureMapInit(); 
-            initAuth(); // Run Strava Init independently for mobile stability
             setTimeout(() => lucide.createIcons(), 1000);
         };
     </script>
