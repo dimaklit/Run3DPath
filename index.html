@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V11.6 Pro Vision</title>
+    <title>Run3D Mobile - V11.7 Connect Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -23,8 +23,8 @@
 
         .glass-ui {
             background: rgba(15, 23, 42, 0.96) !important;
-            backdrop-filter: blur(35px) !important;
-            -webkit-backdrop-filter: blur(35px) !important;
+            backdrop-filter: blur(30px) !important;
+            -webkit-backdrop-filter: blur(30px) !important;
             border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
             box-shadow: 0 15px 45px rgba(0,0,0,0.8) !important;
         }
@@ -123,14 +123,14 @@
             </div>
             <div>
                 <h1 class="text-lg font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    Run3D Path <span class="bg-indigo-500/40 border border-white/20 text-[10px] px-2.5 py-0.5 rounded-full">v11.6</span>
+                    Run3D Path <span class="bg-indigo-500/40 border border-white/20 text-[10px] px-2.5 py-0.5 rounded-full">v11.7</span>
                 </h1>
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1" id="engine-status">INITIALIZING...</p>
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1" id="engine-status">IDLE</p>
             </div>
         </div>
         <div class="flex items-center gap-2 bg-black/50 px-4 py-2.5 rounded-full border border-white/10">
-            <div id="live-dot" class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
-            <span class="text-[10px] font-black text-white uppercase tracking-widest" id="status-pill-text">BUSY</span>
+            <div id="live-dot" class="w-2 h-2 rounded-full bg-emerald-500"></div>
+            <span class="text-[10px] font-black text-white uppercase tracking-widest" id="status-pill-text">LIVE</span>
         </div>
     </header>
 
@@ -223,9 +223,9 @@
         const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
 
-        // Balanced Scaling for Mobile
+        // Advanced Scaler
         const DPR = window.devicePixelRatio || 1;
-        const MOBILE_FACTOR = DPR > 1.5 ? 2.0 : 1.0; 
+        const MOBILE_FACTOR = DPR > 1.5 ? 2.2 : 1.0; 
 
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 230, movieCursorMarker = null;
@@ -249,7 +249,7 @@
             } else {
                 dot.className = "w-2 h-2 rounded-full bg-emerald-500";
                 pillText.innerText = "LIVE";
-                document.getElementById('engine-status').innerText = "PRO VISION ENGINE";
+                document.getElementById('engine-status').innerText = "POWER ENGINE";
             }
         }
 
@@ -273,48 +273,65 @@
 
         function connectStrava() {
             const keys = getKeys();
-            const currentUrl = window.location.href.split('?')[0].split('#')[0];
-            const url = `https://www.strava.com/oauth/authorize?client_id=${keys.id}&redirect_uri=${encodeURIComponent(currentUrl)}&response_type=code&scope=activity:read_all`;
-            const link = document.createElement('a'); link.href = url; link.target = '_top'; 
-            document.body.appendChild(link); link.click();
+            // Critical Mobile Redirect fix: strip hashes and query params to avoid Strava "Invalid URI"
+            const cleanUrl = window.location.origin + window.location.pathname;
+            const url = `https://www.strava.com/oauth/authorize?client_id=${keys.id}&redirect_uri=${encodeURIComponent(cleanUrl)}&response_type=code&scope=activity:read_all`;
+            updateUIMessage("REDIRECTING...");
+            window.location.assign(url);
         }
 
         function disconnectStrava() { localStorage.removeItem('strava_access_token'); window.location.reload(); }
 
         async function initAuth() {
-            const code = new URLSearchParams(window.location.search).get('code');
-            if(!code) { updateStravaUI(!!localStorage.getItem('strava_access_token')); return; }
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            if(!code) { 
+                updateStravaUI(!!localStorage.getItem('strava_access_token')); 
+                return; 
+            }
+            
+            // Clean URL from code immediately to prevent double-submit
             window.history.replaceState({}, document.title, window.location.pathname);
-            updateUIMessage("CONNECTING...");
+            updateUIMessage("HANDSHAKE...");
+            
             try {
                 const keys = getKeys();
                 const res = await fetch('https://www.strava.com/oauth/token', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ client_id: keys.id, client_secret: keys.secret, code, grant_type: 'authorization_code' })
+                    body: JSON.stringify({ 
+                        client_id: keys.id, 
+                        client_secret: keys.secret, 
+                        code: code, 
+                        grant_type: 'authorization_code' 
+                    })
                 });
                 const data = await res.json();
                 if(data.access_token) { 
                     localStorage.setItem('strava_access_token', data.access_token); 
                     updateStravaUI(true); 
                     fetchLatestStravaActivity(); 
+                } else {
+                    updateUIMessage("TOKEN FAIL");
                 }
-            } catch(e) { updateUIMessage("AUTH ERROR"); }
+            } catch(e) { 
+                updateUIMessage("AUTH ERROR"); 
+            }
         }
 
         async function fetchLatestStravaActivity() {
             const token = localStorage.getItem('strava_access_token');
             if(!token) return;
-            const icon = document.getElementById('sync-icon'); icon.classList.add('spinning');
-            updateUIMessage("SYNCING...");
+            const icon = document.getElementById('sync-icon'); if(icon) icon.classList.add('spinning');
+            updateUIMessage("FETCHING...");
             try {
                 const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { headers: { 'Authorization': `Bearer ${token}` } });
                 const activities = await actsRes.json();
-                if(!activities || activities.length === 0) throw new Error("No runs");
+                if(!activities || activities.length === 0) { updateUIMessage("NO RUNS", false); return; }
                 const streamsRes = await fetch(`https://www.strava.com/api/v3/activities/${activities[0].id}/streams?keys=latlng,altitude&key_by_type=true`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const streams = await streamsRes.json();
                 if(streams.latlng) processStreams(streams);
-            } catch(e) { updateUIMessage("API ERROR"); } finally { icon.classList.remove('spinning'); }
+            } catch(e) { updateUIMessage("STRAVA ERR"); } finally { if(icon) icon.classList.remove('spinning'); }
         }
 
         function processStreams(streams) {
@@ -331,42 +348,23 @@
                 addSign(currentTrackCoords[0], '#10b981', 'flag', 'START');
                 addSign(currentTrackCoords[currentTrackCoords.length-1], '#ef4444', 'trophy', 'FINISH');
                 addSign(currentTrackCoords[maxEleIdx], '#a855f7', 'mountain', 'PEAK');
-                document.getElementById('stat-dist').innerHTML = `${(total/1000).toFixed(2)} <span class="text-sm opacity-50">KM</span>`;
-                document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-sm opacity-50">M</span>`;
+                document.getElementById('stat-dist').innerHTML = `${(total/1000).toFixed(2)} <span class="text-sm">KM</span>`;
+                document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-sm">M</span>`;
                 setTimeout(() => zoomToTrack(), 1000);
             }
             updateUIMessage("READY", false);
         }
 
-        // --- ULTRA SECURE MAP BOOT (RE-IMPLEMENTED) ---
         async function secureMapInit() {
             try {
-                const safeLocation = { 
-                    href: 'https://localhost/', protocol: 'https:', origin: 'https://localhost',
-                    host: 'localhost', hostname: 'localhost', pathname: '/', search: '', hash: '', toString: () => 'https://localhost/'
-                };
-                const globalProxy = new Proxy(window, {
-                    get(t, p) {
-                        if (p === 'location') return safeLocation;
-                        if (p === 'history') return { pushState: () => {}, replaceState: () => {}, state: null };
-                        if (['URL', 'Blob', 'Worker', 'File', 'FileReader', 'navigator', 'document'].includes(p)) return window[p];
-                        const v = window[p];
-                        if (typeof v === 'function' && !p.startsWith('on')) { try { return v.bind(window); } catch(e) { return v; } }
-                        return v;
-                    }
-                });
-
-                // Load library text and inject proxy scope
-                const libResponse = await fetch('https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js');
-                const libCode = await libResponse.text();
+                const safeLocation = { href: 'https://localhost/', protocol: 'https:', origin: 'https://localhost', host: 'localhost', hostname: 'localhost', pathname: '/', search: '', hash: '', toString: () => 'https://localhost/' };
+                const globalProxy = new Proxy(window, { get(t, p) { if (p === 'location') return safeLocation; if (p === 'history') return { pushState: () => {}, replaceState: () => {}, state: null }; if (['URL', 'Blob', 'Worker', 'File', 'FileReader', 'navigator', 'document'].includes(p)) return window[p]; const v = window[p]; if (typeof v === 'function' && !p.startsWith('on')) { try { return v.bind(window); } catch(e) { return v; } } return v; } });
+                const libRes = await fetch('https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js');
+                const libCode = await libRes.text();
                 const bundle = new Function('window', 'self', 'location', 'history', 'globalThis', `${libCode}; return maplibregl;`);
                 window.maplibregl = bundle(globalProxy, globalProxy, safeLocation, globalProxy.history, globalProxy);
-                
                 initMap();
-            } catch (e) {
-                console.error("Map Secure Boot Failed:", e);
-                initMap(); // Final fallback
-            }
+            } catch (e) { initMap(); }
         }
 
         function initMap() {
@@ -375,42 +373,14 @@
                 container: 'map', style: `https://api.maptiler.com/maps/hybrid/style.json?key=${MT_KEY}`,
                 center: [0, 20], zoom: 2, pitch: 0, antialias: true, attributionControl: false, fadeDuration: 0, pixelRatio: DPR 
             });
-
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-                
-                // --- V11.6 BOLD HIGH-DEFINITION TRACE ---
-                map.addLayer({ id: 'route-glow', type: 'line', source: 'route', 
-                    layout: { 'line-join': 'round', 'line-cap': 'round' },
-                    paint: { 
-                        'line-color': '#4f46e5', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 15 * MOBILE_FACTOR, 12, 45 * MOBILE_FACTOR, 18, 120 * MOBILE_FACTOR], 
-                        'line-opacity': 0.45, 'line-blur': ['interpolate', ['linear'], ['zoom'], 10, 6, 18, 18]
-                    }
-                });
-                map.addLayer({ id: 'route-neon', type: 'line', source: 'route', 
-                    layout: { 'line-join': 'round', 'line-cap': 'round' },
-                    paint: { 
-                        'line-color': '#6366f1', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 8 * MOBILE_FACTOR, 12, 22 * MOBILE_FACTOR, 18, 60 * MOBILE_FACTOR],
-                        'line-opacity': 0.98
-                    }
-                });
-                map.addLayer({ id: 'route-white', type: 'line', source: 'route', 
-                    layout: { 'line-join': 'round', 'line-cap': 'round' },
-                    paint: { 
-                        'line-color': '#ffffff', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 4 * MOBILE_FACTOR, 12, 6 * MOBILE_FACTOR, 18, 14 * MOBILE_FACTOR],
-                        'line-opacity': 1.0
-                    }
-                });
-
+                map.addLayer({ id: 'route-glow', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#4f46e5', 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 12 * MOBILE_FACTOR, 12, 40 * MOBILE_FACTOR, 18, 110 * MOBILE_FACTOR], 'line-opacity': 0.4, 'line-blur': ['interpolate', ['linear'], ['zoom'], 10, 5, 18, 15] } });
+                map.addLayer({ id: 'route-neon', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#6366f1', 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 6 * MOBILE_FACTOR, 12, 18 * MOBILE_FACTOR, 18, 55 * MOBILE_FACTOR], 'line-opacity': 0.95 } });
+                map.addLayer({ id: 'route-white', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 2 * MOBILE_FACTOR, 12, 4 * MOBILE_FACTOR, 18, 10 * MOBILE_FACTOR], 'line-opacity': 1.0 } });
                 map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
                 map.setTerrain({ source: 'terrain', exaggeration: 1.8 });
-                
-                updateUIMessage("READY", false);
                 lucide.createIcons();
-                initAuth();
             });
             window.addEventListener('resize', () => map.resize());
         }
@@ -483,9 +453,13 @@
         }
 
         window.onload = () => { 
+            // Phase 1: Heavy Auth Handshake
+            initAuth(); 
+            // Phase 2: UI
             lucide.createIcons(); 
+            // Phase 3: Map Engine
             secureMapInit(); 
-            setTimeout(() => lucide.createIcons(), 1000);
+            setTimeout(() => lucide.createIcons(), 1500);
         };
     </script>
 </body>
