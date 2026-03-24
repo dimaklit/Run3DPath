@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V11.8 High-Vis Edition</title>
+    <title>Run3D Mobile - V11.9 Clean Vision</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -70,22 +70,22 @@
         .settings-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1.5px solid rgba(255,255,255,0.1); width: 72px; }
         .sync-btn-small { background: rgba(99, 102, 241, 0.2); color: #fff; border: 1.5px solid #818cf8; width: 72px; }
 
+        /* Clean Waypoints */
         .waypoint-container {
             display: flex; flex-direction: column; align-items: center;
             transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-            filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
         }
-        .waypoint-container.popup { transform: scale(1.8) translateY(-5px); z-index: 1000; }
+        .waypoint-container.popup { transform: scale(1.6) translateY(-5px); z-index: 1000; }
         
         .waypoint-icon {
             width: 32px; height: 32px; border-radius: 10px; border: 2.5px solid white;
             display: flex; align-items: center; justify-content: center;
         }
         .waypoint-label {
-            margin-top: 6px; padding: 3px 8px; border-radius: 6px;
-            background: #000; border: 1.5px solid #fff;
+            margin-top: 6px; padding: 3px 10px; border-radius: 6px;
+            background: rgba(0,0,0,0.85); border: 1px solid #fff;
             color: white; font-size: 8px; font-weight: 900; text-transform: uppercase;
-            white-space: nowrap;
         }
 
         #asset-drawer {
@@ -123,7 +123,7 @@
             </div>
             <div>
                 <h1 class="text-lg font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    Run3D Path <span class="bg-indigo-500/40 border border-white/20 text-[10px] px-2.5 py-0.5 rounded-full">v11.8</span>
+                    Run3D Path <span class="bg-indigo-500/40 border border-white/20 text-[10px] px-2.5 py-0.5 rounded-full">v11.9</span>
                 </h1>
                 <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1" id="engine-status">IDLE</p>
             </div>
@@ -144,7 +144,7 @@
         <button onclick="resetCamera()" class="hud-btn" title="Reset North">
             <i data-lucide="compass" class="w-9 h-9"></i>
         </button>
-        <button onclick="toggleDrawer()" class="hud-btn border-indigo-500/50" title="Add Content">
+        <button onclick="toggleDrawer()" class="hud-btn border-indigo-500/50" title="Import Files">
             <i data-lucide="plus-circle" class="w-9 h-9 text-indigo-400"></i>
         </button>
     </div>
@@ -172,7 +172,7 @@
         <div class="flex-1 overflow-y-auto space-y-12 pt-4">
             <section>
                 <div class="flex items-center justify-between mb-8">
-                    <h3 class="text-[14px] font-black uppercase text-slate-400 tracking-[0.4em]">Activity Details</h3>
+                    <h3 class="text-[14px] font-black uppercase text-slate-400 tracking-[0.4em]">Activity Stats</h3>
                     <i data-lucide="activity" class="w-6 h-6 text-indigo-500"></i>
                 </div>
                 <div class="grid grid-cols-2 gap-6">
@@ -187,7 +187,7 @@
                 </div>
             </section>
             <section>
-                <h3 class="text-[14px] font-black uppercase text-slate-400 tracking-[0.4em] mb-8">Input Manager</h3>
+                <h3 class="text-[14px] font-black uppercase text-slate-400 tracking-[0.4em] mb-8">File Center</h3>
                 <div class="flex gap-6">
                     <button onclick="document.getElementById('gpx-input').click()" class="flex-1 py-8 bg-slate-800 rounded-[32px] text-[12px] font-black uppercase tracking-widest flex items-center justify-center gap-4 active:scale-95 transition-all">
                         <i data-lucide="upload" class="w-7 h-7 text-indigo-400"></i> GPX
@@ -205,15 +205,15 @@
 
     <div id="settings-overlay">
         <div class="glass-ui p-12 rounded-[4rem] w-full max-w-sm space-y-10 border-indigo-500/20 border-2">
-            <h3 class="text-3xl font-black tracking-tighter text-white text-center">API BRIDGE</h3>
+            <h3 class="text-3xl font-black tracking-tighter text-white text-center">API CONFIG</h3>
             <div class="space-y-6">
                 <input type="text" id="input-client-id" class="w-full bg-black/80 border border-white/10 rounded-[24px] px-6 py-6 text-sm outline-none focus:border-indigo-500" placeholder="Client ID">
                 <input type="password" id="input-client-secret" class="w-full bg-black/80 border border-white/10 rounded-[24px] px-6 py-6 text-sm outline-none focus:border-indigo-500" placeholder="Secret Key">
             </div>
             <div class="flex flex-col gap-4">
-                <button onclick="saveApiSettings()" class="w-full py-6 bg-indigo-600 rounded-[24px] font-black text-xs uppercase tracking-widest shadow-2xl">Update Access</button>
+                <button onclick="saveApiSettings()" class="w-full py-6 bg-indigo-600 rounded-[24px] font-black text-xs uppercase tracking-widest shadow-2xl">Update Core</button>
                 <button id="logout-btn" onclick="disconnectStrava()" class="w-full py-4 bg-red-500/10 border border-red-500/30 text-red-500 rounded-[20px] font-black text-[10px] uppercase">Sign Out</button>
-                <button onclick="toggleSettings()" class="w-full py-2 text-slate-500 text-[11px] font-black uppercase">Close</button>
+                <button onclick="toggleSettings()" class="w-full py-2 text-slate-500 text-[11px] font-black uppercase">Dismiss</button>
             </div>
         </div>
     </div>
@@ -223,9 +223,9 @@
         const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
 
-        // Balanced Scaling for Mobile
+        // Precision Scaling: Only slight adjustment for High-DPI to prevent "noisy shoulders"
         const DPR = window.devicePixelRatio || 1;
-        const MOBILE_FACTOR = DPR > 1.5 ? 2.0 : 1.0; 
+        const MOBILE_FACTOR = DPR > 1.5 ? 1.25 : 1.0; 
 
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 230, movieCursorMarker = null;
@@ -242,15 +242,8 @@
         function updateUIMessage(msg, active = true) {
             document.getElementById('engine-status').innerText = msg;
             const dot = document.getElementById('live-dot');
-            const pillText = document.getElementById('status-pill-text');
-            if (active) {
-                dot.className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse";
-                pillText.innerText = "BUSY";
-            } else {
-                dot.className = "w-2 h-2 rounded-full bg-emerald-500";
-                pillText.innerText = "LIVE";
-                document.getElementById('engine-status').innerText = "HIGH-VIS ENGINE";
-            }
+            if (active) dot.className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse";
+            else { dot.className = "w-2 h-2 rounded-full bg-emerald-500"; document.getElementById('engine-status').innerText = "CLEAN ENGINE"; }
         }
 
         function getKeys() { return { id: localStorage.getItem('strava_api_id') || CLIENT_ID_DEF, secret: localStorage.getItem('strava_api_secret') || CLIENT_SEC_DEF }; }
@@ -260,22 +253,15 @@
             const connectBtn = document.getElementById('btn-strava-connect');
             const cinemaBtn = document.getElementById('flyover-btn');
             const syncBtn = document.getElementById('sync-btn-small');
-            if (connected) {
-                connectBtn.style.setProperty('display', 'none', 'important');
-                cinemaBtn.style.setProperty('display', 'flex', 'important');
-                syncBtn.style.setProperty('display', 'flex', 'important');
-            } else {
-                connectBtn.style.setProperty('display', 'flex', 'important');
-                cinemaBtn.style.setProperty('display', 'none', 'important');
-                syncBtn.style.setProperty('display', 'none', 'important');
-            }
+            if (connected) { connectBtn.style.setProperty('display', 'none', 'important'); cinemaBtn.style.setProperty('display', 'flex', 'important'); syncBtn.style.setProperty('display', 'flex', 'important'); }
+            else { connectBtn.style.setProperty('display', 'flex', 'important'); cinemaBtn.style.setProperty('display', 'none', 'important'); syncBtn.style.setProperty('display', 'none', 'important'); }
         }
 
         function connectStrava() {
             const keys = getKeys();
             const cleanUrl = window.location.origin + window.location.pathname;
             const url = `https://www.strava.com/oauth/authorize?client_id=${keys.id}&redirect_uri=${encodeURIComponent(cleanUrl)}&response_type=code&scope=activity:read_all`;
-            updateUIMessage("REDIRECTING...");
+            updateUIMessage("CONNECTING...");
             window.location.assign(url);
         }
 
@@ -284,27 +270,14 @@
         async function initAuth() {
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
-            if(!code) { 
-                updateStravaUI(!!localStorage.getItem('strava_access_token')); 
-                return; 
-            }
+            if(!code) { updateStravaUI(!!localStorage.getItem('strava_access_token')); return; }
             window.history.replaceState({}, document.title, window.location.pathname);
             updateUIMessage("HANDSHAKE...");
             try {
                 const keys = getKeys();
-                const res = await fetch('https://www.strava.com/oauth/token', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ client_id: keys.id, client_secret: keys.secret, code: code, grant_type: 'authorization_code' })
-                });
+                const res = await fetch('https://www.strava.com/oauth/token', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ client_id: keys.id, client_secret: keys.secret, code: code, grant_type: 'authorization_code' }) });
                 const data = await res.json();
-                if(data.access_token) { 
-                    localStorage.setItem('strava_access_token', data.access_token); 
-                    updateStravaUI(true); 
-                    fetchLatestStravaActivity(); 
-                } else {
-                    updateUIMessage("TOKEN FAIL");
-                }
+                if(data.access_token) { localStorage.setItem('strava_access_token', data.access_token); updateStravaUI(true); fetchLatestStravaActivity(); }
             } catch(e) { updateUIMessage("AUTH ERROR"); }
         }
 
@@ -362,42 +335,45 @@
                 container: 'map', style: `https://api.maptiler.com/maps/hybrid/style.json?key=${MT_KEY}`,
                 center: [0, 20], zoom: 2, pitch: 0, antialias: true, attributionControl: false, fadeDuration: 0, pixelRatio: DPR 
             });
+
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
                 
-                // --- V11.8 HIGH-VISIBILITY TRACE (ZOOM-RESISTANT) ---
-                // Wide Aura (Deep indigo)
+                // --- V11.9 PRECISION CLEAN TRACE ---
+                // Subtle Glow (No noise)
                 map.addLayer({ id: 'route-glow', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#4f46e5', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 30 * MOBILE_FACTOR, 12, 80 * MOBILE_FACTOR, 18, 200 * MOBILE_FACTOR], 
-                        'line-opacity': 0.5, 
-                        'line-blur': ['interpolate', ['linear'], ['zoom'], 4, 8, 18, 25] 
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 12 * MOBILE_FACTOR, 12, 35 * MOBILE_FACTOR, 18, 90 * MOBILE_FACTOR], 
+                        'line-opacity': 0.35, 'line-blur': ['interpolate', ['linear'], ['zoom'], 10, 4, 18, 12]
                     }
                 });
-                // Saturated Neon Core
+                // Saturated Main Body
                 map.addLayer({ id: 'route-neon', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#6366f1', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 12 * MOBILE_FACTOR, 12, 30 * MOBILE_FACTOR, 18, 80 * MOBILE_FACTOR],
-                        'line-opacity': 0.98
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 6 * MOBILE_FACTOR, 12, 14 * MOBILE_FACTOR, 18, 35 * MOBILE_FACTOR],
+                        'line-opacity': 0.95
                     }
                 });
-                // SOLID WHITE CORE (High Minimum Thickness)
+                // Ultra Sharp White Core
                 map.addLayer({ id: 'route-white', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#ffffff', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 6 * MOBILE_FACTOR, 12, 10 * MOBILE_FACTOR, 18, 25 * MOBILE_FACTOR],
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 4, 2 * MOBILE_FACTOR, 12, 4 * MOBILE_FACTOR, 18, 10 * MOBILE_FACTOR],
                         'line-opacity': 1.0
                     }
                 });
 
                 map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
                 map.setTerrain({ source: 'terrain', exaggeration: 1.8 });
+                
+                updateUIMessage("READY", false);
                 lucide.createIcons();
+                initAuth();
             });
             window.addEventListener('resize', () => map.resize());
         }
