@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V13.0 Solid Core</title>
+    <title>Run3D Mobile - V13.1 Stable Core</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -219,12 +219,30 @@
         const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
 
-        // Logic for high-visibility mobile line scaling
         const DPR = window.devicePixelRatio || 1;
         const MOBILE_FACTOR = DPR > 1.5 ? 1.4 : 1.0; 
 
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 180, movieCursorMarker = null;
+
+        // Exponential Backoff Fetch Utility
+        async function fetchWithRetry(url, options = {}, retries = 5, backoff = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    if (response.status === 401) throw new Error("UNAUTHORIZED");
+                    if (response.status === 429) throw new Error("RATE_LIMIT");
+                    throw new Error(`HTTP_${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                if (retries > 0 && error.message !== "UNAUTHORIZED") {
+                    await new Promise(resolve => setTimeout(resolve, backoff));
+                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                }
+                throw error;
+            }
+        }
 
         function toggleDrawer() { document.getElementById('asset-drawer').classList.toggle('open'); }
         function toggleSettings() { 
@@ -268,11 +286,14 @@
             const code = params.get('code');
             if(!code) { updateStravaUI(!!localStorage.getItem('strava_access_token')); return; }
             window.history.replaceState({}, document.title, window.location.pathname);
-            updateUIMessage("AUTHENTICATING...");
+            updateUIMessage("AUTHORIZING...");
             try {
                 const keys = getKeys();
-                const res = await fetch('https://www.strava.com/oauth/token', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ client_id: keys.id, client_secret: keys.secret, code: code, grant_type: 'authorization_code' }) });
-                const data = await res.json();
+                const data = await fetchWithRetry('https://www.strava.com/oauth/token', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ client_id: keys.id, client_secret: keys.secret, code: code, grant_type: 'authorization_code' }) 
+                });
                 if(data.access_token) { localStorage.setItem('strava_access_token', data.access_token); updateStravaUI(true); fetchLatestStravaActivity(); }
             } catch(e) { updateUIMessage("AUTH ERROR"); }
         }
@@ -283,13 +304,19 @@
             const icon = document.getElementById('sync-icon'); if(icon) icon.classList.add('spinning');
             updateUIMessage("FETCHING...");
             try {
-                const actsRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=1', { headers: { 'Authorization': `Bearer ${token}` } });
-                const activities = await actsRes.json();
-                if(!activities || activities.length === 0) { updateUIMessage("NO ACTIVITIES", false); return; }
-                const streamsRes = await fetch(`https://www.strava.com/api/v3/activities/${activities[0].id}/streams?keys=latlng,altitude&key_by_type=true`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const streams = await streamsRes.json();
+                const activities = await fetchWithRetry('https://www.strava.com/api/v3/athlete/activities?per_page=1', { headers: { 'Authorization': `Bearer ${token}` } });
+                if(!activities || activities.length === 0) { updateUIMessage("NO RUNS FOUND", false); return; }
+                const streams = await fetchWithRetry(`https://www.strava.com/api/v3/activities/${activities[0].id}/streams?keys=latlng,altitude&key_by_type=true`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if(streams.latlng) processStreams(streams);
-            } catch(e) { updateUIMessage("CONNECTION ERROR"); } finally { if(icon) icon.classList.remove('spinning'); }
+                updateUIMessage("READY", false);
+            } catch(e) { 
+                if (e.message === "UNAUTHORIZED") {
+                    updateUIMessage("SESSION EXPIRED");
+                    disconnectStrava();
+                } else {
+                    updateUIMessage("FETCH FAILED");
+                }
+            } finally { if(icon) icon.classList.remove('spinning'); }
         }
 
         function processStreams(streams) {
@@ -310,12 +337,10 @@
                 document.getElementById('stat-peak').innerHTML = `${Math.round(maxEle)} <span class="text-xs text-slate-400 uppercase">M</span>`;
                 setTimeout(() => zoomToTrack(), 1000);
             }
-            updateUIMessage("READY", false);
         }
 
         async function secureMapInit() {
             try {
-                // Compatibility proxy for MapLibre in sandboxed environments
                 const safeLocation = { href: 'https://localhost/', protocol: 'https:', origin: 'https://localhost', host: 'localhost', hostname: 'localhost', pathname: '/', search: '', hash: '', toString: () => 'https://localhost/' };
                 const globalProxy = new Proxy(window, { get(t, p) { if (p === 'location') return safeLocation; if (p === 'history') return { pushState: () => {}, replaceState: () => {}, state: null }; if (['URL', 'Blob', 'Worker', 'File', 'FileReader', 'navigator', 'document'].includes(p)) return window[p]; const v = window[p]; if (typeof v === 'function' && !p.startsWith('on')) { try { return v.bind(window); } catch(e) { return v; } } return v; } });
                 const libRes = await fetch('https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js');
@@ -334,38 +359,22 @@
 
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-                
-                // --- V13.0 SOLID CORE RENDERING ---
-                // We use one high-visibility layer with dynamic width scaling for mobile screens.
-                // No blur/glow layers are used to ensure the "solid" look requested.
                 map.addLayer({ id: 'route-line', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
-                        'line-color': '#facc15', // Vibrant Amber/Yellow for max contrast
-                        'line-width': [
-                            'interpolate', ['linear'], ['zoom'], 
-                            5, 4 * MOBILE_FACTOR, 
-                            12, 10 * MOBILE_FACTOR, 
-                            18, 24 * MOBILE_FACTOR
-                        ],
+                        'line-color': '#facc15',
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 5, 4 * MOBILE_FACTOR, 12, 10 * MOBILE_FACTOR, 18, 24 * MOBILE_FACTOR],
                         'line-opacity': 1.0
                     }
                 });
-
-                // Subtle outline to separate it from very bright satellite pixels
                 map.addLayer({ id: 'route-outline', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#000', 
-                        'line-width': [
-                            'interpolate', ['linear'], ['zoom'], 
-                            5, 5 * MOBILE_FACTOR, 
-                            12, 13 * MOBILE_FACTOR, 
-                            18, 28 * MOBILE_FACTOR
-                        ],
+                        'line-width': ['interpolate', ['linear'], ['zoom'], 5, 5 * MOBILE_FACTOR, 12, 13 * MOBILE_FACTOR, 18, 28 * MOBILE_FACTOR],
                         'line-opacity': 0.4
                     }
-                }, 'route-line'); // Placed below the primary line
+                }, 'route-line');
 
                 map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
                 map.setTerrain({ source: 'terrain', exaggeration: 1.5 });
