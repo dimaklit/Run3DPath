@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V13.3 Ultra Solid</title>
+    <title>Run3D Mobile - V13.4 Ultra Solid</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -22,11 +22,11 @@
         .ui-layer { z-index: 9999 !important; pointer-events: auto; }
 
         .glass-ui {
-            background: rgba(15, 23, 42, 0.92) !important;
+            background: rgba(15, 23, 42, 0.95) !important;
             backdrop-filter: blur(25px) !important;
             -webkit-backdrop-filter: blur(25px) !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.7) !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8) !important;
         }
 
         #top-header {
@@ -122,7 +122,7 @@
             </div>
             <div>
                 <h1 class="text-sm font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    RUN3D <span class="bg-white/10 border border-white/10 text-[9px] px-2 py-0.5 rounded-full">V13.3</span>
+                    RUN3D <span class="bg-white/10 border border-white/10 text-[9px] px-2 py-0.5 rounded-full">V13.4</span>
                 </h1>
                 <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1" id="engine-status">IDLE</p>
             </div>
@@ -219,9 +219,9 @@
         const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
 
-        // Enhanced scaling for Android high-DPI displays
+        // Aggressive scaling for high-density mobile screens to avoid sub-pixel transparency
         const DPR = window.devicePixelRatio || 1;
-        const MOBILE_FACTOR = DPR > 2.5 ? 2.0 : (DPR > 1.2 ? 1.6 : 1.0); 
+        const MOBILE_FACTOR = DPR > 2.0 ? 1.8 : 1.2; 
 
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 180, movieCursorMarker = null;
@@ -354,45 +354,39 @@
         function initMap() {
             map = new window.maplibregl.Map({
                 container: 'map', style: `https://api.maptiler.com/maps/hybrid/style.json?key=${MT_KEY}`,
-                center: [0, 20], zoom: 2, pitch: 0, antialias: true, attributionControl: false, fadeDuration: 0, pixelRatio: DPR 
+                center: [0, 20], zoom: 2, pitch: 0, antialias: false, attributionControl: false, fadeDuration: 0, pixelRatio: DPR 
             });
 
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
                 
-                // --- V13.3 ULTRA SOLID TRIPLE-CORE ---
-                // LAYER 1: Deep Opaque Base (Ensures no transparency gap)
+                // --- V13.4 ULTRA SOLID FIX ---
+                // We simplify to 2 layers with no blur and forced opacity to fix Android GPU transparency.
+                
+                // LAYER 1: HEAVY OPAQUE CASING (BLACK)
                 map.addLayer({ id: 'route-base', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#000000',
-                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 8 * MOBILE_FACTOR, 12, 18 * MOBILE_FACTOR, 18, 50 * MOBILE_FACTOR],
-                        'line-opacity': 1.0
+                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 10 * MOBILE_FACTOR, 12, 22 * MOBILE_FACTOR, 18, 54 * MOBILE_FACTOR],
+                        'line-opacity': 1.0,
+                        'line-blur': 0
                     }
                 });
                 
-                // LAYER 2: Primary Saturated Middle (The main color)
-                map.addLayer({ id: 'route-mid', type: 'line', source: 'route', 
-                    layout: { 'line-join': 'round', 'line-cap': 'round' },
-                    paint: { 
-                        'line-color': '#f59e0b', // Deep Amber
-                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 6 * MOBILE_FACTOR, 12, 14 * MOBILE_FACTOR, 18, 42 * MOBILE_FACTOR],
-                        'line-opacity': 1.0
-                    }
-                });
-
-                // LAYER 3: High-Contrast Core (Sharpens the edge detection for the eye)
+                // LAYER 2: SOLID CORE (AMBER)
                 map.addLayer({ id: 'route-core', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
-                        'line-color': '#fef3c7', // Cream/Yellow Highlight
-                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 2 * MOBILE_FACTOR, 12, 4 * MOBILE_FACTOR, 18, 12 * MOBILE_FACTOR],
-                        'line-opacity': 1.0
+                        'line-color': '#facc15', 
+                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 6 * MOBILE_FACTOR, 12, 14 * MOBILE_FACTOR, 18, 38 * MOBILE_FACTOR],
+                        'line-opacity': 1.0,
+                        'line-blur': 0
                     }
                 });
 
                 map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
-                map.setTerrain({ source: 'terrain', exaggeration: 1.5 });
+                map.setTerrain({ source: 'terrain', exaggeration: 1.4 }); // Slightly reduced to prevent clipping
                 
                 updateUIMessage("READY", false);
                 lucide.createIcons();
