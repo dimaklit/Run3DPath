@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V13.1 Stable Core</title>
+    <title>Run3D Mobile - V13.2 Ultra Solid</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -219,13 +219,13 @@
         const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
 
+        // Balanced scaling for high-res mobile displays to avoid sub-pixel ghosting
         const DPR = window.devicePixelRatio || 1;
-        const MOBILE_FACTOR = DPR > 1.5 ? 1.4 : 1.0; 
+        const MOBILE_FACTOR = DPR > 1.5 ? 1.5 : 1.0; 
 
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 180, movieCursorMarker = null;
 
-        // Exponential Backoff Fetch Utility
         async function fetchWithRetry(url, options = {}, retries = 5, backoff = 1000) {
             try {
                 const response = await fetch(url, options);
@@ -359,20 +359,26 @@
 
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+                
+                // --- V13.2 ULTRA SOLID CORE ---
+                // We use an exponential interpolation with larger baseline widths for mobile.
+                // The outline (casing) is now fully opaque black to prevent "transparency bleed"
                 map.addLayer({ id: 'route-line', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#facc15',
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 5, 4 * MOBILE_FACTOR, 12, 10 * MOBILE_FACTOR, 18, 24 * MOBILE_FACTOR],
+                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 5 * MOBILE_FACTOR, 12, 12 * MOBILE_FACTOR, 18, 36 * MOBILE_FACTOR],
                         'line-opacity': 1.0
                     }
                 });
+                
+                // Opaque casing layer below the primary line
                 map.addLayer({ id: 'route-outline', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
-                        'line-color': '#000', 
-                        'line-width': ['interpolate', ['linear'], ['zoom'], 5, 5 * MOBILE_FACTOR, 12, 13 * MOBILE_FACTOR, 18, 28 * MOBILE_FACTOR],
-                        'line-opacity': 0.4
+                        'line-color': '#000000', 
+                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 7 * MOBILE_FACTOR, 12, 16 * MOBILE_FACTOR, 18, 44 * MOBILE_FACTOR],
+                        'line-opacity': 1.0
                     }
                 }, 'route-line');
 
