@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V13.2 Ultra Solid</title>
+    <title>Run3D Mobile - V13.3 Ultra Solid</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -122,7 +122,7 @@
             </div>
             <div>
                 <h1 class="text-sm font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    RUN3D <span class="bg-white/10 border border-white/10 text-[9px] px-2 py-0.5 rounded-full">V13.2</span>
+                    RUN3D <span class="bg-white/10 border border-white/10 text-[9px] px-2 py-0.5 rounded-full">V13.3</span>
                 </h1>
                 <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1" id="engine-status">IDLE</p>
             </div>
@@ -219,9 +219,9 @@
         const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
 
-        // Balanced scaling for high-res mobile displays to avoid sub-pixel ghosting
+        // Enhanced scaling for Android high-DPI displays
         const DPR = window.devicePixelRatio || 1;
-        const MOBILE_FACTOR = DPR > 1.5 ? 1.5 : 1.0; 
+        const MOBILE_FACTOR = DPR > 2.5 ? 2.0 : (DPR > 1.2 ? 1.6 : 1.0); 
 
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 180, movieCursorMarker = null;
@@ -360,27 +360,36 @@
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
                 
-                // --- V13.2 ULTRA SOLID CORE ---
-                // We use an exponential interpolation with larger baseline widths for mobile.
-                // The outline (casing) is now fully opaque black to prevent "transparency bleed"
-                map.addLayer({ id: 'route-line', type: 'line', source: 'route', 
+                // --- V13.3 ULTRA SOLID TRIPLE-CORE ---
+                // LAYER 1: Deep Opaque Base (Ensures no transparency gap)
+                map.addLayer({ id: 'route-base', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
-                        'line-color': '#facc15',
-                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 5 * MOBILE_FACTOR, 12, 12 * MOBILE_FACTOR, 18, 36 * MOBILE_FACTOR],
+                        'line-color': '#000000',
+                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 8 * MOBILE_FACTOR, 12, 18 * MOBILE_FACTOR, 18, 50 * MOBILE_FACTOR],
                         'line-opacity': 1.0
                     }
                 });
                 
-                // Opaque casing layer below the primary line
-                map.addLayer({ id: 'route-outline', type: 'line', source: 'route', 
+                // LAYER 2: Primary Saturated Middle (The main color)
+                map.addLayer({ id: 'route-mid', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
-                        'line-color': '#000000', 
-                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 7 * MOBILE_FACTOR, 12, 16 * MOBILE_FACTOR, 18, 44 * MOBILE_FACTOR],
+                        'line-color': '#f59e0b', // Deep Amber
+                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 6 * MOBILE_FACTOR, 12, 14 * MOBILE_FACTOR, 18, 42 * MOBILE_FACTOR],
                         'line-opacity': 1.0
                     }
-                }, 'route-line');
+                });
+
+                // LAYER 3: High-Contrast Core (Sharpens the edge detection for the eye)
+                map.addLayer({ id: 'route-core', type: 'line', source: 'route', 
+                    layout: { 'line-join': 'round', 'line-cap': 'round' },
+                    paint: { 
+                        'line-color': '#fef3c7', // Cream/Yellow Highlight
+                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 2 * MOBILE_FACTOR, 12, 4 * MOBILE_FACTOR, 18, 12 * MOBILE_FACTOR],
+                        'line-opacity': 1.0
+                    }
+                });
 
                 map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
                 map.setTerrain({ source: 'terrain', exaggeration: 1.5 });
