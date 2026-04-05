@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Run3D Mobile - V13.4 Ultra Solid</title>
+    <title>Run3D Mobile - V13.5 Precision Core</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -122,7 +122,7 @@
             </div>
             <div>
                 <h1 class="text-sm font-black tracking-tighter leading-none text-white flex items-center gap-2">
-                    RUN3D <span class="bg-white/10 border border-white/10 text-[9px] px-2 py-0.5 rounded-full">V13.4</span>
+                    RUN3D <span class="bg-white/10 border border-white/10 text-[9px] px-2 py-0.5 rounded-full">V13.5</span>
                 </h1>
                 <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1" id="engine-status">IDLE</p>
             </div>
@@ -219,9 +219,9 @@
         const CLIENT_SEC_DEF = '68086f28b4970e5856fd8f8d32a7b51df738174d';
         const MT_KEY = "MX9HHSfQg4Ieuv8eCGEY";
 
-        // Aggressive scaling for high-density mobile screens to avoid sub-pixel transparency
+        // Accurate scaling for mobile high-DPI displays
         const DPR = window.devicePixelRatio || 1;
-        const MOBILE_FACTOR = DPR > 2.0 ? 1.8 : 1.2; 
+        const MOBILE_FACTOR = DPR > 2.0 ? 1.5 : 1.1; 
 
         let map, currentTrackCoords = [], waypointMarkers = [];
         let isFlyoverActive = false, flyoverRequestId = null, lastTimestamp = 0, flyoverCurrentDist = 0, flyoverBaseSpeed = 180, movieCursorMarker = null;
@@ -360,33 +360,34 @@
             map.on('load', () => {
                 map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
                 
-                // --- V13.4 ULTRA SOLID FIX ---
-                // We simplify to 2 layers with no blur and forced opacity to fix Android GPU transparency.
+                // --- V13.5 PRECISION CORE ---
+                // Narrower, highly-accurate lines with no transparency and a crisp aesthetic.
                 
-                // LAYER 1: HEAVY OPAQUE CASING (BLACK)
+                // LAYER 1: RAZOR-SHARP BLACK OUTLINE (PRECISION CASING)
                 map.addLayer({ id: 'route-base', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#000000',
-                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 10 * MOBILE_FACTOR, 12, 22 * MOBILE_FACTOR, 18, 54 * MOBILE_FACTOR],
+                        // Much narrower widths for an "accurate" athletic look
+                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 3.5 * MOBILE_FACTOR, 12, 6.5 * MOBILE_FACTOR, 18, 16 * MOBILE_FACTOR],
                         'line-opacity': 1.0,
                         'line-blur': 0
                     }
                 });
                 
-                // LAYER 2: SOLID CORE (AMBER)
+                // LAYER 2: TECHNICAL SOLID CORE (AMBER)
                 map.addLayer({ id: 'route-core', type: 'line', source: 'route', 
                     layout: { 'line-join': 'round', 'line-cap': 'round' },
                     paint: { 
                         'line-color': '#facc15', 
-                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 6 * MOBILE_FACTOR, 12, 14 * MOBILE_FACTOR, 18, 38 * MOBILE_FACTOR],
+                        'line-width': ['interpolate', ['exponential', 1.5], ['zoom'], 5, 1.8 * MOBILE_FACTOR, 12, 3.8 * MOBILE_FACTOR, 18, 10 * MOBILE_FACTOR],
                         'line-opacity': 1.0,
                         'line-blur': 0
                     }
                 });
 
                 map.addSource('terrain', { type: 'raster-dem', url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MT_KEY}`, tileSize: 256 });
-                map.setTerrain({ source: 'terrain', exaggeration: 1.4 }); // Slightly reduced to prevent clipping
+                map.setTerrain({ source: 'terrain', exaggeration: 1.4 }); 
                 
                 updateUIMessage("READY", false);
                 lucide.createIcons();
